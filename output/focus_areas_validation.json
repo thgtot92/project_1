@@ -1,0 +1,72 @@
+{
+  "노량진역-수산시장 보행로": {
+    "center": [
+      37.5125,
+      126.941
+    ],
+    "radius_m": 300,
+    "reason": "수험생 유동인구 최상위, 직사광선 노출 보행 구간",
+    "top_hits_in_area": 0,
+    "nearest_top_distance_m": 1355.0,
+    "hits": []
+  },
+  "사당역4번-이수역 축": {
+    "center": [
+      37.4885,
+      126.966
+    ],
+    "radius_m": 400,
+    "reason": "환승 대기 인구 밀집, 오후 열스트레스 급증",
+    "top_hits_in_area": 2,
+    "nearest_top_distance_m": 167.0,
+    "hits": [
+      {
+        "rank": 1,
+        "lat": 37.49066,
+        "lon": 126.96474,
+        "score": 0.574,
+        "distance_m": 265.0
+      },
+      {
+        "rank": 2,
+        "lat": 37.48977,
+        "lon": 126.96701,
+        "score": 0.567,
+        "distance_m": 167.0
+      }
+    ]
+  },
+  "상도로 주거축": {
+    "center": [
+      37.4985,
+      126.936
+    ],
+    "radius_m": 300,
+    "reason": "고령자 비율 높은 주거 밀집, 대체 그늘 부족",
+    "top_hits_in_area": 3,
+    "nearest_top_distance_m": 66.0,
+    "hits": [
+      {
+        "rank": 5,
+        "lat": 37.49864,
+        "lon": 126.93527,
+        "score": 0.382,
+        "distance_m": 66.0
+      },
+      {
+        "rank": 6,
+        "lat": 37.49774,
+        "lon": 126.93528,
+        "score": 0.373,
+        "distance_m": 106.0
+      },
+      {
+        "rank": 7,
+        "lat": 37.49773,
+        "lon": 126.93414,
+        "score": 0.363,
+        "distance_m": 185.0
+      }
+    ]
+  }
+}

@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>동작구 여름 그늘막 최적 입지 추천 시스템 · 최종 발표</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <!-- reveal.js via CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css" id="theme">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css">
+
+  <!-- Pretendard (한국어 가독성) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+
+  <style>
+    :root {
+      --c-primary: #1E88E5;
+      --c-accent:  #E53935;
+      --c-warn:    #FB8C00;
+      --c-vuln:    #8E24AA;
+      --c-dark:    #212121;
+      --c-sub:     #555555;
+      --c-light:   #EEEEEE;
+    }
+    .reveal {
+      font-family: "Pretendard Variable", Pretendard, "맑은 고딕",
+                   "Malgun Gothic", system-ui, sans-serif;
+      color: var(--c-dark);
+    }
+    .reveal h1, .reveal h2, .reveal h3 { color: var(--c-dark); text-transform: none; }
+    .reveal h1 { font-size: 2.2em; }
+    .reveal h2 { font-size: 1.5em; margin-bottom: 0.2em; }
+    .reveal h3 { font-size: 1.05em; font-weight: 500; color: var(--c-sub); margin-bottom: 0.8em; }
+    .reveal section { text-align: left; }
+    .reveal section.center { text-align: center; }
+    .reveal ul { margin-left: 1.2em; }
+    .reveal li { margin: 0.3em 0; line-height: 1.4; }
+    .reveal table { font-size: 0.7em; margin: 0.5em auto; }
+    .reveal table th { background: var(--c-primary); color: white; padding: 0.5em 0.8em; }
+    .reveal table td { padding: 0.4em 0.8em; }
+
+    /* 상단 컬러 바 */
+    .title-bar {
+      border-left: 6px solid var(--c-primary);
+      padding-left: 14px;
+      margin-bottom: 0.5em;
+    }
+
+    /* 표지 */
+    .cover { background: var(--c-dark); color: white; padding: 3em; height: 100%; }
+    .cover h1 { color: white; font-size: 2.6em; line-height: 1.2; }
+    .cover .sub { color: #bbb; font-size: 1.1em; margin-top: 1em; }
+    .cover .divider {
+      width: 120px; height: 3px; background: var(--c-primary);
+      margin: 1.5em 0 1em 0;
+    }
+    .cover .meta { color: #aaa; font-size: 0.85em; }
+
+    /* 4단계 박스 */
+    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 1em; }
+    .step {
+      background: #FAFAFA; border-radius: 10px; padding: 16px;
+      border: 2px solid var(--c-sub); position: relative;
+    }
+    .step.p1 { border-color: var(--c-primary); }
+    .step.p2 { border-color: var(--c-warn); }
+    .step.p3 { border-color: var(--c-accent); }
+    .step .tag { font-size: 0.7em; font-weight: bold; color: var(--c-sub); }
+    .step.p1 .tag { color: var(--c-primary); }
+    .step.p2 .tag { color: var(--c-warn); }
+    .step.p3 .tag { color: var(--c-accent); }
+    .step .name { font-size: 1.3em; font-weight: bold; margin: 0.3em 0 0.5em 0; }
+    .step .body { font-size: 0.75em; color: var(--c-sub); line-height: 1.4; }
+
+    /* 퍼널 */
+    .funnel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 1em 0; }
+    .f-box { border-radius: 12px; padding: 1.2em 0.5em; text-align: center; color: white; }
+    .f-box .num { font-size: 2.8em; font-weight: bold; line-height: 1; }
+    .f-box .lbl { font-size: 0.75em; margin-top: 0.4em; opacity: 0.9; }
+    .f-bg-sub { background: var(--c-sub); }
+    .f-bg-warn { background: var(--c-warn); }
+    .f-bg-acc { background: var(--c-accent); }
+    .f-bg-pri { background: var(--c-primary); }
+
+    /* Score 박스 */
+    .score-box {
+      background: #212121; color: #FFEE58; font-size: 1.3em;
+      padding: 0.7em 1em; border-radius: 10px;
+      text-align: center; font-weight: bold; margin: 0.8em 0;
+      font-family: "Cascadia Code", Consolas, monospace;
+    }
+
+    /* 강건 입지 카드 */
+    .robust-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 1em 0; }
+    .robust-card {
+      background: #FAFAFA; border-radius: 12px; padding: 1.2em;
+      text-align: center; border: 2px solid;
+    }
+    .robust-card.r1, .robust-card.r2 { border-color: var(--c-vuln); }
+    .robust-card.r3 { border-color: var(--c-accent); }
+    .robust-card .hash { font-size: 0.8em; font-weight: bold; }
+    .robust-card.r1 .hash, .robust-card.r2 .hash { color: var(--c-vuln); }
+    .robust-card.r3 .hash { color: var(--c-accent); }
+    .robust-card .road { font-size: 1.6em; font-weight: bold; margin: 0.3em 0; }
+    .robust-card .area { font-size: 0.85em; color: var(--c-sub); }
+    .robust-card .coord { font-size: 0.7em; color: var(--c-sub); margin-top: 0.6em; }
+
+    /* 두 컬럼 */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .callout {
+      background: #F5F8FD; border: 1.5px solid var(--c-primary);
+      border-radius: 10px; padding: 0.8em 1em; font-size: 0.85em;
+    }
+    .callout.warn { background: #FFF5E6; border-color: var(--c-warn); }
+    .callout.dark {
+      background: var(--c-dark); color: #FFEE58;
+      border: none; text-align: center; font-size: 1.1em; font-weight: bold;
+      padding: 1em;
+    }
+    .callout.dark .sub { color: #ccc; font-size: 0.7em; font-weight: normal; margin-top: 0.4em; }
+
+    /* iframe */
+    .map-frame {
+      width: 100%; height: 520px; border: 1px solid #ddd; border-radius: 6px;
+    }
+    .map-caption { font-size: 0.7em; color: var(--c-sub); text-align: center; margin-top: 0.3em; }
+
+    /* footer */
+    .footer {
+      position: absolute; bottom: 10px; left: 20px; right: 20px;
+      display: flex; justify-content: space-between;
+      font-size: 0.55em; color: var(--c-sub);
+    }
+
+    /* 배지 */
+    .badge { display: inline-block; padding: 0.15em 0.5em; border-radius: 4px;
+             font-size: 0.85em; font-weight: bold; }
+    .badge.pass { background: var(--c-primary); color: white; }
+    .badge.partial { background: var(--c-warn); color: white; }
+    .highlight { background: #FFF59D; padding: 0.05em 0.3em; border-radius: 3px; }
+  </style>
+</head>
+<body>
+<div class="reveal"><div class="slides">
+
+<!-- 1. 표지 -->
+<section class="cover center" data-background-color="#212121">
+  <h1>동작구 여름 그늘막<br>최적 입지 추천 시스템</h1>
+  <div class="sub">채권 트레이더의 다변수 최적화 방법론을<br>도시 공간 데이터에 이식</div>
+  <div class="divider"></div>
+  <div class="meta">
+    데이터기반 도시설계 · 기말 프로젝트<br>
+    한영재 / 인공지능융합대학원 인공지능컴퓨팅 / 2025961227<br>
+    <span style="color:#888">2026년 4월</span>
+  </div>
+</section>
+
+<!-- 2. 문제 정의 -->
+<section>
+  <div class="title-bar">
+    <h2>문제 정의 · 접근</h2>
+    <h3>어디에 설치할 것인가 — 민원·직관이 아닌 데이터의 논리로</h3>
+  </div>
+  <ul>
+    <li>그늘막은 유한한 예산 → 어느 격자에 설치해야 <b>폭염 스트레스 × 유동인구 × 취약계층</b> 효용이 최대인가?</li>
+    <li>기존 방식: 민원 기반 · 담당자 직관 → <span class="highlight">공간적 편향, 이미 커버된 곳 중복 설치</span></li>
+    <li>제안: 다변수 가중합 + 공간 필터 + 시나리오 민감도 + 자연그늘까지 반영한 입지 추천 파이프라인</li>
+  </ul>
+  <div class="callout">
+    <b style="color:var(--c-primary); font-size:1.1em;">채권 트레이더 관점의 다변수 최적화</b>
+    <ul style="margin:0.5em 0 0 1em; font-size:0.95em;">
+      <li>피처 = 채권의 수익률 곡선 요인 · 격자 = 포트폴리오 후보</li>
+      <li>가중합 + 제약조건(보행로·기존그늘막) = 리스크 예산 내 최적 포지션</li>
+      <li>시나리오 민감도 = 금리 시나리오 스트레스 테스트와 <b>동형(同形)</b></li>
+    </ul>
+  </div>
+  <div class="footer"><span>동작구 그늘막 · 한영재 · 2025961227</span><span>2 / 12</span></div>
+</section>
+
+<!-- 3. 파이프라인 -->
+<section>
+  <div class="title-bar">
+    <h2>파이프라인 개요</h2>
+    <h3>격자 → 스코어 → 필터 → 시나리오 → LLM 근거</h3>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="tag">STEP 0</div><div class="name">격자</div>
+      <div class="body">동작구 100m 격자<br>3,672 cells</div></div>
+    <div class="step p1"><div class="tag">STEP 1</div><div class="name">스코어</div>
+      <div class="body">pop·lst·vuln(+)<br>shade·natural(−)<br>시간대 가중 9~18시</div></div>
+    <div class="step p2"><div class="tag">STEP 2</div><div class="name">필터</div>
+      <div class="body">보행로 20m 이내<br>기존그늘막 150m 외<br>3,672 → 23 → 19</div></div>
+    <div class="step p3"><div class="tag">STEP 3</div><div class="name">시나리오+LLM</div>
+      <div class="body">4개 프리셋 × TOP10<br>LLM 자연어 근거</div></div>
+  </div>
+  <p style="font-size:0.7em; color:var(--c-sub); margin-top:1em;">
+    산출물: <code>shade_map.html</code> · <code>scenarios_map.html</code> ·
+    <code>rationales.json</code> · <code>scenarios_comparison.csv</code> ·
+    <code>focus_areas_validation.json</code>
+  </p>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>3 / 12</span></div>
+</section>
+
+<!-- 4. 데이터 5종 -->
+<section>
+  <div class="title-bar">
+    <h2>입력 데이터 5종 · 시간대 가중</h2>
+    <h3>실데이터 ↔ 더미 자동 스위칭 / 역세권·시장 프로파일 분리</h3>
+  </div>
+  <table>
+    <thead><tr><th>데이터</th><th>출처</th><th>시간 프로파일</th></tr></thead>
+    <tbody>
+      <tr><td>생활인구 (SKT)</td><td>서울 열린데이터광장</td>
+          <td>역세권=출퇴근 / 시장=오후 피크</td></tr>
+      <tr><td>지표면 온도 LST</td><td>서울연구원 Landsat</td>
+          <td>오후 1~3시 1.0 (피크 가중)</td></tr>
+      <tr><td>취약계층 비율</td><td>KOSIS 동별 통계</td>
+          <td>상수 (연령 구조)</td></tr>
+      <tr><td>기존 그늘막 위치</td><td>서울 열린데이터광장</td>
+          <td>반경 150m 제외 (커버리지)</td></tr>
+      <tr><td>인도·횡단보도</td><td>국가공간정보포털</td>
+          <td>폭 ≥ 2m / 20m 이내 강제</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:0.75em; color:var(--c-sub); margin-top:0.8em;">
+    ⚙ <code>data/raw/*.csv·geojson</code> 배치 시 <code>data_loader.py</code>가 자동 전환
+    → 현재는 동작구 실제 거점(역세권·시장·주거축) 기반 더미 데이터로 파이프라인 검증
+  </p>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>4 / 12</span></div>
+</section>
+
+<!-- 5. 알고리즘 -->
+<section>
+  <div class="title-bar">
+    <h2>알고리즘 · Score 식</h2>
+    <h3>MinMax 정규화 후 가중합 (음수 가중치 = 페널티)</h3>
+  </div>
+  <div class="score-box">
+    Score = 0.30·popdens + 0.30·lst + 0.20·vuln − 0.15·shade − 0.05·natural
+  </div>
+  <ul style="font-size:0.88em;">
+    <li><b style="color:var(--c-primary)">popdens (+0.30)</b> — 시간대 가중 유동인구 (9~18시, 오후 1~3시 1.0 피크)</li>
+    <li><b style="color:var(--c-warn)">lst (+0.30)</b> — 지표면 온도, 오후 피크 시간대 가중 평균</li>
+    <li><b style="color:var(--c-vuln)">vuln (+0.20)</b> — 고령자·어린이 비율 (취약계층)</li>
+    <li><b style="color:var(--c-sub)">shade (−0.15)</b> — 기존 그늘막 반경 150m 내 커버리지 (이미 된 곳은 감점)</li>
+    <li><b style="color:var(--c-sub)">natural (−0.05)</b> — 건물 그림자 커버 비율 (자연 그늘 페널티, <span class="highlight">신규 활성화</span>)</li>
+  </ul>
+  <p style="color:var(--c-primary); font-weight:bold; font-size:0.85em;">
+    🎚 Streamlit 대시보드에서 슬라이더로 실시간 조정 가능 · 시나리오별 프리셋 4종 내장
+  </p>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>5 / 12</span></div>
+</section>
+
+<!-- 6. 공간 필터링 결과 + 지도 -->
+<section>
+  <div class="title-bar">
+    <h2>공간 필터링 · TOP 10</h2>
+    <h3>보행로·횡단보도 강제 제약으로 강변/건물 후보 원천 제외</h3>
+  </div>
+  <div class="funnel">
+    <div class="f-box f-bg-sub"><div class="num">3,672</div><div class="lbl">전체 격자</div></div>
+    <div class="f-box f-bg-warn"><div class="num">23</div><div class="lbl">보행로 20m 이내</div></div>
+    <div class="f-box f-bg-acc"><div class="num">19</div><div class="lbl">기존그늘막 제외</div></div>
+    <div class="f-box f-bg-pri"><div class="num">10</div><div class="lbl">최종 추천</div></div>
+  </div>
+  <iframe class="map-frame" src="../output/shade_map.html" loading="lazy"></iframe>
+  <div class="map-caption">▲ shade_map.html — 기본 시나리오 TOP 10 지도 (실시간 임베드)</div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>6 / 12</span></div>
+</section>
+
+<!-- 7. 자연그늘 -->
+<section>
+  <div class="title-bar">
+    <h2>자연 그늘 시뮬레이션 <span class="badge pass">NEW</span></h2>
+    <h3>건물 footprint + 오후 3시 태양위치 → 격자별 그림자 커버 비율</h3>
+  </div>
+  <div class="two-col">
+    <ul>
+      <li>태양 위치: 서울 7월 말 오후 3시<br>
+          <b>고도 52° · 방위 252°</b></li>
+      <li>그림자 = 건물 footprint ∪ 태양반대방향 평행이동의 convex hull</li>
+      <li>격자별 자연그늘 면적 / 격자 면적 → <code>[0,1] natural</code> 피처</li>
+      <li>외부 라이브러리 없이 <code>shapely.affinity.translate</code>로 직접 계산</li>
+    </ul>
+    <div>
+      <div class="callout warn">
+        <b>효과 검증</b>
+        <ul style="margin:0.4em 0 0 1em; font-size:0.9em;">
+          <li>강건 입지 <b>4 → 3</b>곳 (식별력 ↑)</li>
+          <li>상도로 TOP5 <b>0.395 → 0.382</b></li>
+          <li>고령자 시나리오 최고 <b>0.580 → 0.567</b></li>
+        </ul>
+      </div>
+      <p style="font-size:0.8em; color:var(--c-sub); margin-top:0.7em;">
+        실데이터 <code>data/raw/buildings.geojson</code> 확보 시 자동 교체 구조
+      </p>
+    </div>
+  </div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>7 / 12</span></div>
+</section>
+
+<!-- 8. 시나리오 민감도 + 지도 -->
+<section>
+  <div class="title-bar">
+    <h2>시나리오 민감도 분석</h2>
+    <h3>정책 관점별 가중치 프리셋 × 동일 피처셋 → TOP 10 변화</h3>
+  </div>
+  <div class="two-col">
+    <div>
+      <table>
+        <thead><tr><th>시나리오</th><th>강조</th><th>최고</th><th>유니크</th></tr></thead>
+        <tbody>
+          <tr><td>기본</td><td>균형 (30/30/20)</td><td>0.574</td><td>0곳</td></tr>
+          <tr><td><b>고령자</b></td><td>vuln 0.45</td><td><b>0.567</b></td><td><b>4곳</b></td></tr>
+          <tr><td>폭염</td><td>lst 0.45</td><td>0.617</td><td>0곳</td></tr>
+          <tr><td><b>유동인구</b></td><td>pop 0.45</td><td>0.633</td><td><b>3곳</b></td></tr>
+        </tbody>
+      </table>
+      <p style="color:var(--c-accent); font-weight:bold; font-size:0.8em;">
+        💡 자연그늘 활성화로 고령자 시나리오<br>0.580 → 0.567 (페널티 의도대로 작동)
+      </p>
+    </div>
+    <div>
+      <iframe class="map-frame" style="height:400px;" src="../output/scenarios_map.html" loading="lazy"></iframe>
+      <div class="map-caption">▲ scenarios_map.html — 4개 시나리오 토글</div>
+    </div>
+  </div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>8 / 12</span></div>
+</section>
+
+<!-- 9. 강건 입지 -->
+<section>
+  <div class="title-bar">
+    <h2>강건 입지 · Robust Location</h2>
+    <h3>4개 시나리오 공통 추천 = 어떤 정책 관점에서도 필수</h3>
+  </div>
+  <div class="robust-grid">
+    <div class="robust-card r1">
+      <div class="hash">#1</div>
+      <div class="road">상도로</div>
+      <div class="area">상도3동 주거밀집</div>
+      <div class="coord">37.4977, 126.9341</div>
+    </div>
+    <div class="robust-card r2">
+      <div class="hash">#2</div>
+      <div class="road">상도로</div>
+      <div class="area">상도3동 주거밀집</div>
+      <div class="coord">37.4986, 126.9353</div>
+    </div>
+    <div class="robust-card r3">
+      <div class="hash">#3</div>
+      <div class="road">동작대로</div>
+      <div class="area">사당-이수 축</div>
+      <div class="coord">37.4907, 126.9647</div>
+    </div>
+  </div>
+  <p style="color:var(--c-primary); font-weight:bold; text-align:center; font-size:1.05em;">
+    정책적 함의 — 예산 제약 시 이 3곳이 최우선 설치 대상
+  </p>
+  <p style="color:var(--c-sub); text-align:center; font-size:0.85em;">
+    자연그늘 활성화로 <b>4 → 3곳</b> · 식별력이 더 엄격해졌음
+  </p>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>9 / 12</span></div>
+</section>
+
+<!-- 10. 3대 구역 검증 -->
+<section>
+  <div class="title-bar">
+    <h2>1차 발표자료 3대 집중구역 검증</h2>
+    <h3>사전 선정한 후보 구역을 알고리즘이 얼마나 재현했는가?</h3>
+  </div>
+  <table style="font-size:0.75em;">
+    <thead><tr><th>구역</th><th>판정</th><th>반경 내 TOP</th><th>최근접</th><th>해설</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>노량진역-수산시장</td>
+        <td><span class="badge partial">△</span></td>
+        <td>0곳</td><td>1,355m</td>
+        <td>기존 그늘막 선배치 → 페널티 작동 (의도대로)</td>
+      </tr>
+      <tr>
+        <td>사당역-이수역 축</td>
+        <td><span class="badge pass">✓</span></td>
+        <td>2곳 (TOP1·TOP2)</td><td>167m</td>
+        <td>환승 대기 + 오후 열스트레스 최상위</td>
+      </tr>
+      <tr>
+        <td>상도로 주거축</td>
+        <td><span class="badge pass">✓</span></td>
+        <td>3곳 (TOP5~7)</td><td>66m</td>
+        <td>고령자 비율 + 자연그늘 부족 이중 반영</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="callout" style="margin-top:0.8em; font-size:0.85em;">
+    💡 <b>노량진 '0곳'은 실패가 아님</b>: 더미 데이터에서 기존 그늘막을 노량진 보행로에
+    우선 배치한 결과, "기존 그늘막 반경 150m 외" 제약으로 자연스럽게 후순위로 밀린 것.
+    <b>이미 커버된 곳은 제외하는 알고리즘이 의도대로 작동</b>한 사례.
+  </div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>10 / 12</span></div>
+</section>
+
+<!-- 11. Streamlit 대시보드 -->
+<section>
+  <div class="title-bar">
+    <h2>인터랙티브 대시보드</h2>
+    <h3>가중치 슬라이더 → TOP 10 실시간 재계산 (Streamlit)</h3>
+  </div>
+  <div class="two-col">
+    <ul style="font-size:0.88em;">
+      <li><code>streamlit run app.py</code> → <code>http://localhost:8501</code></li>
+      <li>사이드바: 시나리오 프리셋 + 5개 가중치 슬라이더</li>
+      <li>본문: Folium 지도 임베드 + TOP 10 표 + 통계</li>
+      <li>캐싱: <code>@st.cache_resource</code>로 격자·피처는 1회 계산,
+          슬라이더 조작은 가중합 재계산만 (밀리초 반응)</li>
+      <li>발표 현장에서 <span class="highlight">"만약 vuln을 더 높이면?"</span> 질문에 즉답 가능</li>
+    </ul>
+    <div style="background:#FAFAFA; border:2px dashed var(--c-sub);
+                border-radius:10px; padding:2em 1em; text-align:center;
+                color:var(--c-sub); font-size:0.85em;">
+      📷 <b>Streamlit 대시보드 스크린샷</b><br><br>
+      (발표 시연 시 별도 창에서<br><code>streamlit run app.py</code> 실행)
+    </div>
+  </div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>11 / 12</span></div>
+</section>
+
+<!-- 12. 한계 + 요약 -->
+<section>
+  <div class="title-bar">
+    <h2>한계 · 다음 단계 · 한 줄 요약</h2>
+  </div>
+  <div class="two-col">
+    <div>
+      <h3 style="color:var(--c-accent); margin:0.2em 0;">현재 한계</h3>
+      <ul style="font-size:0.8em;">
+        <li>5종 데이터 모두 더미 (파이프라인은 자동 전환)</li>
+        <li>LST 래스터 직접 파싱 미연결 (Landsat ST_B10)</li>
+        <li>건물 footprint 더미 19개 → 실 shp 확보 시 교체</li>
+        <li>예산 제약 미반영 (K개 최적 조합 = 배낭 문제)</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="color:var(--c-primary); margin:0.2em 0;">다음 단계</h3>
+      <ul style="font-size:0.8em;">
+        <li>서울 열린데이터광장 API 연결 (P0)</li>
+        <li>국가공간정보포털 도로대장 shp (인도 폭)</li>
+        <li>격자 스코어 parquet 캐싱</li>
+        <li>타 자치구 확장 (BBOX 교체로 재사용)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout dark">
+    데이터의 논리로, 어떤 정책 관점을 취하든 그늘막이 반드시 필요한 <span style="color:#FFEE58">3곳</span>을 찾아냈다.
+    <div class="sub">— 자연그늘 페널티까지 반영해 식별력을 한 단계 더 엄격하게</div>
+  </div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>12 / 12</span></div>
+</section>
+
+</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: false,
+    controls: true,
+    progress: true,
+    transition: 'slide',
+    width: 1280, height: 720,
+    margin: 0.04,
+    plugins: [ RevealHighlight ],
+  });
+</script>
+</body>
+</html>

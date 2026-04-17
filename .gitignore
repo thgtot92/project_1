@@ -1,0 +1,49 @@
+# ── Python ──────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# ── Editors / IDE ───────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── OS ──────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Secrets & env ───────────────────────
+.env
+.env.*
+.streamlit/secrets.toml
+
+# ── Data (실데이터 유출 방지) ────────────
+data/raw/*.csv
+data/raw/*.geojson
+data/raw/*.shp
+data/raw/*.dbf
+data/raw/*.shx
+data/raw/*.prj
+data/raw/*.tif
+data/raw/*.tiff
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# ── 명시적 제외 (public repo 정책) ───────
+가이드.txt
+도시설계_1차_발표자료.pdf
+
+# ── 실행 캐시 ───────────────────────────
+output/dashboard_map.html
