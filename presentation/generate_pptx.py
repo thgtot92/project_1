@@ -123,7 +123,7 @@ def build():
     prs.slide_height = SLIDE_H
     blank = prs.slide_layouts[6]
 
-    TOTAL = 12
+    TOTAL = 14
 
     # ────────── 1. 표지 ──────────
     s = prs.slides.add_slide(blank)
@@ -291,10 +291,10 @@ def build():
     _add_header_bar(s, "알고리즘 · Score 식",
                     "MinMax 정규화 후 가중합 (음수 가중치 = 페널티)")
 
-    # Score 식 박스
+    # Score 식 박스 (CV 통합 후 6 피처)
     box = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE,
                               Inches(0.75), Inches(1.9),
-                              Inches(12), Inches(1.3))
+                              Inches(12), Inches(1.6))
     box.fill.solid()
     box.fill.fore_color.rgb = RGBColor(0x21, 0x21, 0x21)
     box.line.fill.background()
@@ -302,18 +302,22 @@ def build():
     tf.margin_left = Inches(0.3); tf.margin_top = Inches(0.25)
     p = tf.paragraphs[0]; p.alignment = PP_ALIGN.CENTER
     r = p.add_run()
-    r.text = ("Score = 0.30·popdens + 0.30·lst + 0.20·vuln "
-              "− 0.15·shade − 0.05·natural")
-    _set_font(r, size=22, bold=True, color=RGBColor(0xFF, 0xEE, 0x58))
+    r.text = ("Score = 0.25·popdens + 0.25·lst + 0.20·vuln")
+    _set_font(r, size=20, bold=True, color=RGBColor(0xFF, 0xEE, 0x58))
+    p2 = tf.add_paragraph(); p2.alignment = PP_ALIGN.CENTER
+    r = p2.add_run()
+    r.text = "− 0.15·shade − 0.05·natural + 0.15·streetview_deficit"
+    _set_font(r, size=20, bold=True, color=RGBColor(0xFF, 0xEE, 0x58))
 
     # 가중치 해설
-    _add_bullets(s, Inches(0.75), Inches(3.4), Inches(12), Inches(2.3), [
-        "popdens (+0.30) — 시간대 가중 유동인구 (9~18시, 오후 1~3시 1.0 피크)",
-        "lst (+0.30) — 지표면 온도, 오후 피크 시간대 가중 평균",
+    _add_bullets(s, Inches(0.75), Inches(3.7), Inches(12), Inches(2.3), [
+        "popdens (+0.25) — 시간대 가중 유동인구 (오후 1~3시 1.0 피크)",
+        "lst (+0.25) — 지표면 온도, 오후 피크 가중 평균",
         "vuln (+0.20) — 고령자·어린이 비율 (취약계층)",
-        "shade (−0.15) — 기존 그늘막 반경 150m 내 커버리지 (이미 된 곳은 감점)",
-        "natural (−0.05) — 건물 그림자 커버 비율 (자연 그늘 페널티, 신규 활성화)",
-    ], size=16)
+        "shade (−0.15) — 기존 그늘막 반경 150m 내 커버리지",
+        "natural (−0.05) — CV-A SAM 추출 건물 그림자 시뮬레이션",
+        "streetview_deficit (+0.15) — CV-B SegFormer 거리뷰 그늘 결핍 (NEW)",
+    ], size=15)
 
     _add_text(s, Inches(0.75), Inches(6.0), Inches(12), Inches(0.5),
               "🎚 Streamlit 대시보드에서 슬라이더로 실시간 조정 가능 "
@@ -359,7 +363,7 @@ def build():
 
     # ────────── 7. 자연 그늘 시뮬레이션 ──────────
     s = prs.slides.add_slide(blank)
-    _add_header_bar(s, "자연 그늘 시뮬레이션 (신규)",
+    _add_header_bar(s, "자연 그늘 시뮬레이션",
                     "건물 footprint + 오후 3시 태양위치 → 격자별 그림자 커버 비율")
 
     _add_bullets(s, Inches(0.75), Inches(1.9), Inches(7.5), Inches(4.5), [
@@ -367,8 +371,7 @@ def build():
         "그림자 = 건물 footprint ∪ 태양반대방향 평행이동의 convex hull",
         "격자별 자연그늘 면적 / 격자 면적 → [0,1] natural 피처",
         "외부 라이브러리 없이 shapely.affinity.translate 로 직접 계산",
-        "효과 검증: 강건 입지 4 → 3곳, 상도로 TOP5 0.395 → 0.382",
-        "실데이터(buildings.geojson) 확보 시 자동 교체 구조",
+        "건물 입력은 다음 슬라이드의 CV-A로 자동 교체됨",
     ], size=15)
 
     _placeholder_image(s, Inches(8.5), Inches(1.9),
@@ -376,23 +379,126 @@ def build():
                        "건물 + 그림자 시각화\n(선택)")
     _add_footer(s, 7, TOTAL)
 
-    # ────────── 8. 시나리오 4개 민감도 ──────────
+    # ────────── 8. CV-A: 위성 + Mobile-SAM (NEW) ──────────
     s = prs.slides.add_slide(blank)
-    _add_header_bar(s, "시나리오 민감도 분석",
-                    "정책 관점별 가중치 프리셋 × 동일 피처셋 → TOP 10 변화")
+    _add_header_bar(s, "CV-A · 위성 항공사진 + Mobile-SAM",
+                    "딥러닝 zero-shot segmentation으로 동작구 건물 자동 추출")
+
+    _add_bullets(s, Inches(0.75), Inches(1.9), Inches(6.5), Inches(4.5), [
+        "V-World WMTS z=15 항공사진 → 동작구 BBOX 48 타일 합성",
+        "Mobile-SAM (Meta, 2023) — 40MB 경량 SAM, CPU 추론 가능",
+        "필터: 면적 200~30k px², 종횡비 0.2~5, 평균 밝기 80~220",
+        "결과: 더미 19동 → 실측 30동 자동 추출",
+        "픽셀 → EPSG:3857 → WGS84 polygon 변환 → buildings.geojson",
+        "파이프라인 첫 실행 시 자동 1회, 이후 캐시 사용",
+    ], size=14)
+
+    # 산출물 박스
+    box = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE,
+                              Inches(7.5), Inches(1.9),
+                              Inches(5.3), Inches(4.5))
+    box.fill.solid()
+    box.fill.fore_color.rgb = RGBColor(0xF5, 0xF8, 0xFD)
+    box.line.color.rgb = COLOR_PRIMARY
+    box.line.width = Pt(1.5)
+    tf = box.text_frame; tf.word_wrap = True
+    tf.margin_left = Inches(0.3); tf.margin_top = Inches(0.3)
+    p = tf.paragraphs[0]
+    r = p.add_run(); r.text = "📁 output/cv_buildings_overlay.png"
+    _set_font(r, size=14, bold=True, color=COLOR_PRIMARY)
+    for line_txt in [
+        "",
+        "위성 이미지 (2048×1536)",
+        "+ SAM 마스크 노란색 오버레이",
+        "+ 추출 polygon 녹색 외곽선",
+        "",
+        "30동 분포: 노량진·사당·이수·",
+        "상도로·장승배기·흑석동",
+    ]:
+        p = tf.add_paragraph()
+        r = p.add_run(); r.text = line_txt
+        _set_font(r, size=12, color=COLOR_DARK)
+        p.space_before = Pt(2)
+    _add_footer(s, 8, TOTAL)
+
+    # ────────── 9. CV-B: 거리뷰 + SegFormer (NEW) ──────────
+    s = prs.slides.add_slide(blank)
+    _add_header_bar(s, "CV-B · 거리뷰 + SegFormer (CityScapes)",
+                    "지면 시점에서 본 보행 환경을 19-class 의미 분할")
+
+    _add_bullets(s, Inches(0.75), Inches(1.9), Inches(6.5), Inches(4.5), [
+        "Mapillary 거리뷰 — 동작구 BBOX 4×4 분할 검색 → 1,249장 발견",
+        "후보 19개 격자에 nearest 매핑 → 격자당 ≤3장 다운로드",
+        "HuggingFace SegFormer-b0 (CityScapes 19 classes pretrained)",
+        "주요 클래스: building · vegetation · road · sidewalk · sky",
+        "Treepedia(MIT)·Place Pulse 류 선행연구의 그늘막 응용",
+    ], size=14)
+
+    # Score 식 박스
+    box = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE,
+                              Inches(7.5), Inches(1.9),
+                              Inches(5.3), Inches(2.0))
+    box.fill.solid()
+    box.fill.fore_color.rgb = RGBColor(0x21, 0x21, 0x21)
+    box.line.fill.background()
+    tf = box.text_frame; tf.word_wrap = True
+    tf.margin_left = Inches(0.2); tf.margin_top = Inches(0.2)
+    p = tf.paragraphs[0]; p.alignment = PP_ALIGN.CENTER
+    r = p.add_run(); r.text = "그늘 결핍 지수"
+    _set_font(r, size=14, bold=True, color=RGBColor(0xFF, 0xEE, 0x58))
+    p2 = tf.add_paragraph(); p2.alignment = PP_ALIGN.CENTER
+    r = p2.add_run(); r.text = "deficit ="
+    _set_font(r, size=12, color=RGBColor(0xCC, 0xCC, 0xCC))
+    p3 = tf.add_paragraph(); p3.alignment = PP_ALIGN.CENTER
+    r = p3.add_run(); r.text = "(road + sidewalk)"
+    _set_font(r, size=14, bold=True, color=RGBColor(0xFF, 0xFF, 0xFF))
+    p4 = tf.add_paragraph(); p4.alignment = PP_ALIGN.CENTER
+    r = p4.add_run(); r.text = "× (1 − building − vegetation)"
+    _set_font(r, size=14, bold=True, color=RGBColor(0xFF, 0xFF, 0xFF))
+
+    # 결과 박스
+    box2 = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE,
+                               Inches(7.5), Inches(4.1),
+                               Inches(5.3), Inches(2.3))
+    box2.fill.solid()
+    box2.fill.fore_color.rgb = RGBColor(0xFFF, 0xFA, 0xE6) \
+        if False else RGBColor(0xFF, 0xF4, 0xE5)
+    box2.line.color.rgb = COLOR_WARN
+    box2.line.width = Pt(1.5)
+    tf = box2.text_frame; tf.word_wrap = True
+    tf.margin_left = Inches(0.25); tf.margin_top = Inches(0.2)
+    p = tf.paragraphs[0]
+    r = p.add_run(); r.text = "📊 결과"
+    _set_font(r, size=14, bold=True, color=COLOR_WARN)
+    for line_txt in [
+        "TOP10 평균 deficit: 0.127",
+        "Score 식 6번째 피처 통합",
+        "신규 시나리오 추가: 보행환경_중시",
+    ]:
+        p = tf.add_paragraph()
+        r = p.add_run(); r.text = "• " + line_txt
+        _set_font(r, size=13, color=COLOR_DARK)
+        p.space_before = Pt(4)
+    _add_footer(s, 9, TOTAL)
+
+    # ────────── 10. 시나리오 5개 민감도 ──────────
+    s = prs.slides.add_slide(blank)
+    _add_header_bar(s, "시나리오 민감도 분석 (5개 프리셋)",
+                    "정책 관점별 가중치 × 동일 피처셋 → TOP 10 변화")
 
     rows = [
         ("시나리오", "강조", "최고 Score", "유니크"),
-        ("기본", "균형 (30/30/20)", "0.574", "0곳"),
-        ("고령자 중시", "vuln 0.45", "0.567", "4곳 독점"),
-        ("폭염 중시", "lst 0.45", "0.617", "0곳"),
-        ("유동인구 중시", "pop 0.45", "0.633", "3곳 독점"),
+        ("기본", "균형 (25/25/20)", "0.533", "0곳"),
+        ("고령자 중시", "vuln 0.40", "0.585", "3곳 독점"),
+        ("폭염 중시", "lst 0.40", "0.577", "0곳"),
+        ("유동인구 중시", "pop 0.40", "0.610", "4곳 독점"),
+        ("보행환경 중시 (NEW)", "streetview_deficit 0.40", "0.586", "0곳"),
     ]
     left = Inches(0.75); top = Inches(1.9)
     tbl = s.shapes.add_table(rows=len(rows), cols=4,
                               left=left, top=top,
-                              width=Inches(12), height=Inches(2.8)).table
-    widths = [Inches(3.0), Inches(3.5), Inches(2.5), Inches(3.0)]
+                              width=Inches(12), height=Inches(3.0)).table
+    widths = [Inches(3.5), Inches(3.5), Inches(2.0), Inches(3.0)]
     for i, cw in enumerate(widths):
         tbl.columns[i].width = cw
     for ri, row in enumerate(rows):
@@ -407,64 +513,63 @@ def build():
                 cell.fill.solid()
                 cell.fill.fore_color.rgb = COLOR_PRIMARY
             else:
-                bold = ri in (2, 4)  # 고령자·유동인구 강조
-                _set_font(r, size=14, bold=bold, color=COLOR_DARK)
+                bold = ri in (2, 4, 5)  # 고령자·유동인구·보행환경 강조
+                _set_font(r, size=13, bold=bold, color=COLOR_DARK)
 
-    _add_text(s, Inches(0.75), Inches(5.0), Inches(12), Inches(0.5),
-              "💡 자연그늘 활성화로 고령자 시나리오 최고 Score "
-              "0.580 → 0.567 (페널티 의도대로 작동)",
+    _add_text(s, Inches(0.75), Inches(5.2), Inches(12), Inches(0.5),
+              "💡 CV-B 통합으로 \"보행환경 중시\" 시나리오 신규 추가 "
+              "→ 정책 검증 차원이 한 단계 늘어남",
               size=14, bold=True, color=COLOR_ACCENT)
-    _add_text(s, Inches(0.75), Inches(5.6), Inches(12), Inches(0.5),
-              "🎯 \"정책이 다르면 답도 다르다\" — 그러나 어떤 관점에서도 "
-              "공통으로 추천되는 입지가 존재한다 (다음 슬라이드)",
+    _add_text(s, Inches(0.75), Inches(5.8), Inches(12), Inches(0.5),
+              "🎯 5가지 관점 모두에서 공통 추천되는 입지가 존재 (다음 슬라이드)",
               size=14, color=COLOR_SUB)
-    _add_footer(s, 8, TOTAL)
+    _add_footer(s, 10, TOTAL)
 
-    # ────────── 9. 강건 입지 3곳 ──────────
+    # ────────── 11. 강건 입지 2곳 ──────────
     s = prs.slides.add_slide(blank)
     _add_header_bar(s, "강건 입지 · Robust Location",
-                    "4개 시나리오 공통 추천 = 어떤 정책 관점에서도 필수")
+                    "5개 시나리오 공통 추천 = 어떤 정책 관점에서도 필수")
 
-    # 3 카드
+    # 2 카드
     robust = [
-        ("37.4977, 126.9341", "상도로", "상도3동 주거밀집", COLOR_VULN),
-        ("37.4986, 126.9353", "상도로", "상도3동 주거밀집", COLOR_VULN),
         ("37.4907, 126.9647", "동작대로", "사당-이수 축", COLOR_ACCENT),
+        ("37.4898, 126.9670", "동작대로", "사당역 인근", COLOR_ACCENT),
     ]
-    left = Inches(0.75); top = Inches(2.0)
-    w = Inches(3.95); h = Inches(3.0); gap = Inches(0.15)
+    left = Inches(2.0); top = Inches(2.0)
+    w = Inches(4.5); h = Inches(3.5); gap = Inches(0.4)
     for i, (coord, road, area, color) in enumerate(robust):
-        x = left + Inches(i * (3.95 + 0.15))
+        x = left + Inches(i * (4.5 + 0.4))
         box = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, x, top, w, h)
         box.fill.solid()
         box.fill.fore_color.rgb = RGBColor(0xFA, 0xFA, 0xFA)
         box.line.color.rgb = color
-        box.line.width = Pt(2.5)
+        box.line.width = Pt(3)
         tf = box.text_frame; tf.word_wrap = True
-        tf.margin_left = Inches(0.2); tf.margin_top = Inches(0.2)
+        tf.margin_left = Inches(0.2); tf.margin_top = Inches(0.3)
         p = tf.paragraphs[0]; p.alignment = PP_ALIGN.CENTER
         r = p.add_run(); r.text = f"#{i+1}"
-        _set_font(r, size=16, bold=True, color=color)
+        _set_font(r, size=18, bold=True, color=color)
         p2 = tf.add_paragraph(); p2.alignment = PP_ALIGN.CENTER
         r = p2.add_run(); r.text = road
-        _set_font(r, size=28, bold=True, color=COLOR_DARK)
-        p2.space_before = Pt(6)
+        _set_font(r, size=32, bold=True, color=COLOR_DARK)
+        p2.space_before = Pt(10)
         p3 = tf.add_paragraph(); p3.alignment = PP_ALIGN.CENTER
         r = p3.add_run(); r.text = area
-        _set_font(r, size=16, color=COLOR_SUB)
-        p3.space_before = Pt(4)
+        _set_font(r, size=18, color=COLOR_SUB)
+        p3.space_before = Pt(8)
         p4 = tf.add_paragraph(); p4.alignment = PP_ALIGN.CENTER
         r = p4.add_run(); r.text = coord
-        _set_font(r, size=12, color=COLOR_SUB)
-        p4.space_before = Pt(10)
+        _set_font(r, size=13, color=COLOR_SUB)
+        p4.space_before = Pt(15)
 
-    _add_text(s, Inches(0.75), Inches(5.4), Inches(12), Inches(0.5),
-              "정책적 함의: 예산 제약 시 이 3곳이 최우선 설치 대상",
-              size=16, bold=True, color=COLOR_PRIMARY)
-    _add_text(s, Inches(0.75), Inches(6.0), Inches(12), Inches(0.5),
-              "자연그늘 활성화로 4 → 3곳 — 식별력이 더 엄격해졌음",
-              size=13, color=COLOR_SUB)
-    _add_footer(s, 9, TOTAL)
+    _add_text(s, Inches(0.75), Inches(5.8), Inches(12), Inches(0.5),
+              "정책적 함의: 예산 제약 시 이 2곳이 최우선 설치 대상",
+              size=16, bold=True, color=COLOR_PRIMARY,
+              align=PP_ALIGN.CENTER)
+    _add_text(s, Inches(0.75), Inches(6.4), Inches(12), Inches(0.5),
+              "CV-B 보행환경 시나리오까지 통과한 입지 → 더 까다로운 검증 통과",
+              size=13, color=COLOR_SUB, align=PP_ALIGN.CENTER)
+    _add_footer(s, 11, TOTAL)
 
     # ────────── 10. 발표자료 3대 구역 검증 ──────────
     s = prs.slides.add_slide(blank)
@@ -514,9 +619,9 @@ def build():
               "'기존 그늘막 반경 150m 외' 제약으로 자연스럽게 후순위로 밀린 것. "
               "이미 커버된 곳은 제외하는 알고리즘이 의도대로 작동한 사례.",
               size=13, color=COLOR_SUB)
-    _add_footer(s, 10, TOTAL)
+    _add_footer(s, 12, TOTAL)
 
-    # ────────── 11. Streamlit 대시보드 ──────────
+    # ────────── 13. Streamlit 대시보드 ──────────
     s = prs.slides.add_slide(blank)
     _add_header_bar(s, "인터랙티브 대시보드",
                     "가중치 슬라이더 → TOP 10 실시간 재계산 (Streamlit)")
@@ -533,9 +638,9 @@ def build():
     _placeholder_image(s, Inches(7.5), Inches(1.9),
                        Inches(5.5), Inches(4.5),
                        "app.py 대시보드\n스크린샷 배치")
-    _add_footer(s, 11, TOTAL)
+    _add_footer(s, 13, TOTAL)
 
-    # ────────── 12. 한계 + 요약 ──────────
+    # ────────── 14. 한계 + 요약 ──────────
     s = prs.slides.add_slide(blank)
     _add_header_bar(s, "한계 · 다음 단계 · 한 줄 요약", None)
 
@@ -568,15 +673,18 @@ def build():
     tf.margin_left = Inches(0.3); tf.margin_top = Inches(0.25)
     p = tf.paragraphs[0]; p.alignment = PP_ALIGN.CENTER
     r = p.add_run()
-    r.text = ("데이터의 논리로, 어떤 정책 관점을 취하든 "
-              "그늘막이 반드시 필요한 3곳을 찾아냈다.")
-    _set_font(r, size=20, bold=True, color=RGBColor(0xFF, 0xEE, 0x58))
+    r.text = ("항공사진과 거리뷰까지 컴퓨터 비전으로 읽어내,")
+    _set_font(r, size=18, bold=True, color=RGBColor(0xFF, 0xEE, 0x58))
+    p1b = tf.add_paragraph(); p1b.alignment = PP_ALIGN.CENTER
+    r = p1b.add_run()
+    r.text = "5가지 정책 관점 모두에서 살아남는 강건 입지 2곳을 찾아냈다."
+    _set_font(r, size=18, bold=True, color=RGBColor(0xFF, 0xEE, 0x58))
     p2 = tf.add_paragraph(); p2.alignment = PP_ALIGN.CENTER
     r = p2.add_run()
-    r.text = "— 자연그늘 페널티까지 반영해 식별력을 한 단계 더 엄격하게."
-    _set_font(r, size=14, color=RGBColor(0xCC, 0xCC, 0xCC))
-    p2.space_before = Pt(6)
-    _add_footer(s, 12, TOTAL)
+    r.text = "— SAM(항공) + SegFormer(거리뷰) + MCDA 가중합 + 시나리오 민감도"
+    _set_font(r, size=12, color=RGBColor(0xCC, 0xCC, 0xCC))
+    p2.space_before = Pt(8)
+    _add_footer(s, 14, TOTAL)
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     prs.save(str(OUT))

@@ -1,10 +1,22 @@
 """프로젝트 전역 설정"""
+import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_RAW = ROOT / "data" / "raw"
 DATA_PROCESSED = ROOT / "data" / "processed"
 OUTPUT = ROOT / "output"
+
+# .env 자동 로딩 (없어도 무해)
+try:
+    from dotenv import load_dotenv
+    load_dotenv(ROOT / ".env")
+except ImportError:
+    pass
+
+# 외부 API 키 (없으면 None — 더미 fallback)
+VWORLD_API_KEY = os.getenv("VWORLD_API_KEY")
+MAPILLARY_TOKEN = os.getenv("MAPILLARY_TOKEN")
 
 # 동작구 대략 경계 (WGS84, lon/lat)
 DONGJAK_BBOX = {
@@ -23,31 +35,37 @@ CRS_KOREA = "EPSG:5179"   # 격자 분석은 미터 단위로
 GRID_SIZE_M = 100
 
 # 스코어 가중치 (합 = 1.0 권장, 음수 항목은 페널티)
+# streetview_deficit: 거리뷰 segmentation으로 산출한 그늘 결핍 지수 (CV-B)
 WEIGHTS = {
-    "popdens": 0.30,      # 유동인구
-    "lst":     0.30,      # 지표면 온도
-    "vuln":    0.20,      # 취약계층 가중치
-    "shade":  -0.15,      # 기존 그늘막 커버리지 (페널티)
-    "natural":-0.05,      # 건물/수목 자연 그늘 (페널티)
+    "popdens":            0.25,    # 유동인구
+    "lst":                0.25,    # 지표면 온도
+    "vuln":               0.20,    # 취약계층 가중치
+    "shade":             -0.15,    # 기존 그늘막 커버리지 (페널티)
+    "natural":           -0.05,    # 건물 자연 그늘 (CV-A)
+    "streetview_deficit": 0.15,    # 거리뷰 그늘 결핍 (CV-B)
 }
 
 # 시나리오 프리셋 (정책 관점별 가중치)
 SCENARIOS = {
     "기본": {
-        "popdens": 0.30, "lst": 0.30, "vuln": 0.20,
-        "shade": -0.15, "natural": -0.05,
+        "popdens": 0.25, "lst": 0.25, "vuln": 0.20,
+        "shade": -0.15, "natural": -0.05, "streetview_deficit": 0.15,
     },
     "고령자_중시": {
-        "popdens": 0.20, "lst": 0.20, "vuln": 0.45,
-        "shade": -0.10, "natural": -0.05,
+        "popdens": 0.15, "lst": 0.20, "vuln": 0.40,
+        "shade": -0.10, "natural": -0.05, "streetview_deficit": 0.15,
     },
     "폭염_중시": {
-        "popdens": 0.20, "lst": 0.45, "vuln": 0.20,
-        "shade": -0.10, "natural": -0.05,
+        "popdens": 0.15, "lst": 0.40, "vuln": 0.15,
+        "shade": -0.10, "natural": -0.10, "streetview_deficit": 0.15,
     },
     "유동인구_중시": {
-        "popdens": 0.45, "lst": 0.20, "vuln": 0.20,
-        "shade": -0.10, "natural": -0.05,
+        "popdens": 0.40, "lst": 0.15, "vuln": 0.15,
+        "shade": -0.10, "natural": -0.05, "streetview_deficit": 0.20,
+    },
+    "보행환경_중시": {  # CV-B 강조 신규 시나리오
+        "popdens": 0.15, "lst": 0.15, "vuln": 0.15,
+        "shade": -0.10, "natural": -0.05, "streetview_deficit": 0.40,
     },
 }
 

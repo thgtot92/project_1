@@ -26,6 +26,7 @@ desktop.ini
 # ── Secrets & env ───────────────────────
 .env
 .env.*
+!.env.example
 .streamlit/secrets.toml
 
 # ── Data (실데이터 유출 방지) ────────────
@@ -40,6 +41,11 @@ data/raw/*.tiff
 data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+# CV-A 산출물 (우리 결과물, 재현용으로 포함)
+!data/raw/buildings.geojson
+# CV-B 산출물 (격자별 deficit, 재현용으로 포함)
+!data/processed/grid_streetview.csv
+!data/processed/streetview_features.json
 
 # ── 명시적 제외 (public repo 정책) ───────
 가이드.txt
@@ -47,3 +53,14 @@ data/processed/*
 
 # ── 실행 캐시 ───────────────────────────
 output/dashboard_map.html
+
+# ── 외부 데이터 저작물 (V-World, Mapillary 등 재배포 금지) ──
+data/raw/satellite_dongjak.*
+data/processed/streetview_images/
+output/cv_buildings_overlay.png
+output/cv_streetview_overlay.png
+
+# ── ML 모델 가중치 (자동 다운로드) ──────
+mobile_sam.pt
+*.pt
+!**/test_*.pt

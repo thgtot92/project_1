@@ -57,8 +57,11 @@ def compute_scores(grid: gpd.GeoDataFrame,
     shade_cov = _shade_coverage(cent_gdf, shades,
                                 radius_m=FILTER["exclusion_radius_m"])
 
-    # 자연 그늘: 건물 footprint + 오후 피크 태양 위치로 그림자 시뮬레이션 → 셀 커버 비율
+    # 자연 그늘 (CV-A): 건물 footprint + 오후 피크 태양 위치로 그림자 시뮬레이션
     nat = data_loader.load_natural_shade(grid)
+
+    # 거리뷰 그늘 결핍 (CV-B): grid_streetview.csv 가 있으면 nearest 매칭, 없으면 0
+    sv_deficit = data_loader.load_streetview_deficit(pts)
 
     out = grid.copy()
     out["lon"] = pts["lon"].values
@@ -68,20 +71,23 @@ def compute_scores(grid: gpd.GeoDataFrame,
     out["vuln_ratio"] = vuln.values
     out["shade_cov"] = shade_cov.values
     out["natural"] = nat.values
+    out["sv_deficit"] = sv_deficit.values
 
     nrm = pd.DataFrame({
-        "popdens": _minmax(pop),
-        "lst":     _minmax(lst),
-        "vuln":    _minmax(vuln),
-        "shade":   _minmax(shade_cov),
-        "natural": _minmax(nat),
+        "popdens":            _minmax(pop),
+        "lst":                _minmax(lst),
+        "vuln":               _minmax(vuln),
+        "shade":              _minmax(shade_cov),
+        "natural":            _minmax(nat),
+        "streetview_deficit": _minmax(sv_deficit),
     })
     out["score"] = (
-        W["popdens"] * nrm["popdens"]
-        + W["lst"]    * nrm["lst"]
-        + W["vuln"]   * nrm["vuln"]
-        + W["shade"]  * nrm["shade"]
-        + W["natural"] * nrm["natural"]
+        W["popdens"]            * nrm["popdens"]
+        + W["lst"]              * nrm["lst"]
+        + W["vuln"]             * nrm["vuln"]
+        + W["shade"]            * nrm["shade"]
+        + W["natural"]          * nrm["natural"]
+        + W.get("streetview_deficit", 0.0) * nrm["streetview_deficit"]
     ).values
     return out
 
@@ -92,19 +98,23 @@ def rescore_from_features(scored: gpd.GeoDataFrame,
 
     scenarios 여러 번 돌릴 때 데이터 재로딩 비용 절약.
     """
+    sv_col = scored["sv_deficit"] if "sv_deficit" in scored.columns \
+        else pd.Series(np.zeros(len(scored)), index=scored.index)
     nrm = pd.DataFrame({
-        "popdens": _minmax(scored["pop"]),
-        "lst":     _minmax(scored["lst_c"]),
-        "vuln":    _minmax(scored["vuln_ratio"]),
-        "shade":   _minmax(scored["shade_cov"]),
-        "natural": _minmax(scored["natural"]),
+        "popdens":            _minmax(scored["pop"]),
+        "lst":                _minmax(scored["lst_c"]),
+        "vuln":               _minmax(scored["vuln_ratio"]),
+        "shade":              _minmax(scored["shade_cov"]),
+        "natural":            _minmax(scored["natural"]),
+        "streetview_deficit": _minmax(sv_col),
     })
     out = scored.copy()
     out["score"] = (
-        weights["popdens"] * nrm["popdens"]
-        + weights["lst"]    * nrm["lst"]
-        + weights["vuln"]   * nrm["vuln"]
-        + weights["shade"]  * nrm["shade"]
-        + weights["natural"] * nrm["natural"]
+        weights["popdens"]            * nrm["popdens"]
+        + weights["lst"]              * nrm["lst"]
+        + weights["vuln"]             * nrm["vuln"]
+        + weights["shade"]            * nrm["shade"]
+        + weights["natural"]          * nrm["natural"]
+        + weights.get("streetview_deficit", 0.0) * nrm["streetview_deficit"]
     ).values
     return out

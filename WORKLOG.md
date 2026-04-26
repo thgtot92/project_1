@@ -38,15 +38,19 @@
 - [x] **자연 그늘 활성화** — 동작구 주요 건물군 + 오후 3시(고도 52°/방위 252°) 그림자 시뮬레이션 → 격자별 커버 비율로 `natural` 페널티 부여
 - [x] **Streamlit 대시보드** — 가중치 슬라이더 + 시나리오 프리셋 → TOP 10 실시간 재계산 (`app.py`)
 - [x] **최종 발표자료** — PPTX(12장, 16:9) + reveal.js HTML 두 종 (`presentation/`)
+- [x] **CV-A: V-World 항공사진 + Mobile-SAM** — 동작구 BBOX z15 48타일 → SAM zero-shot → 실측 건물 30동 추출 → `data/raw/buildings.geojson` (자연그늘 시뮬레이션 입력 자동 교체)
+- [x] **CV-B: Mapillary 거리뷰 + SegFormer (CityScapes 19 classes)** — 동작구 1,249장 거리뷰 → 19개 후보 격자 매핑 → `shade_deficit = walkable × (1 − building − vegetation)` 산출 → Score 식 6번째 피처
+- [x] **시나리오 5개로 확장** — `보행환경_중시` 추가 (streetview_deficit 0.40)
 
-### 실행 결과 (더미 데이터, 자연그늘 활성화 후)
+### 실행 결과 (CV-A 실측 건물 + CV-B 거리뷰 통합 후)
 - 격자 수: **3,672 cells** → 보행로 필터 23 → 기존그늘막 제외 19
-- Score 범위: **0.000 ~ 0.595** (기본 시나리오 기준)
-- 시나리오별 최고 Score: 기본 0.574 / 고령자 **0.567** / 폭염 0.617 / 유동인구 0.633
-   (고령자 0.580 → 0.567: 상도로 아파트 그림자 페널티 반영)
-- 모든 시나리오 공통 추천: **3곳** (자연그늘 활성화로 4 → 3, 식별력 ↑)
-- 상도로 TOP5~7 score: 0.395/0.382/0.374 → **0.382/0.373/0.363** (그림자 영향)
-- 동작대로 사당-이수 TOP1·TOP2: 보행로 위 그림자 영향 작아 score 유지
+- Score 범위: **−0.050 ~ 0.547** (기본 시나리오, 6 피처 가중합)
+- 시나리오별 최고 Score:
+   - 기본 **0.533**, 고령자 **0.585**, 폭염 **0.577**, 유동인구 **0.610**, 보행환경 **0.586**
+- 모든 5개 시나리오 공통 추천: **2곳**
+- TOP10 평균 streetview_deficit: **0.127** (CV-B가 점수에 의미 있게 반영됨)
+- CV-A 산출 건물: **30동** (이전 더미 19동 → V-World z15 항공사진에서 SAM 자동 추출)
+- CV-B 거리뷰: 동작구 BBOX **1,249장** Mapillary 발견 → 19개 후보에 매핑 → 10개 격자 분석
 - 산출물:
   - `output/shade_map.html` — 기본 TOP 10 지도
   - `output/scenarios_map.html` — 4개 시나리오 토글 비교
@@ -76,6 +80,11 @@ project_1/
 │   ├── data_loader.py            # 5종 데이터 로더 + 시간 프로파일
 │   │                              + 보행로·횡단보도 네트워크
 │   │                              + 건물 footprint + 자연그늘 시뮬레이션
+│   │                              + streetview_deficit 로더 (CV-B)
+│   ├── cv_buildings.py           # CV-A: V-World 항공사진 + Mobile-SAM
+│   │                              → buildings.geojson 자동 생성
+│   ├── cv_streetview.py          # CV-B: Mapillary + SegFormer (CityScapes)
+│   │                              → grid_streetview.csv (격자별 deficit)
 │   ├── scoring.py                # STEP 1: compute_scores + rescore_from_features
 │   ├── filtering.py              # STEP 2: 보행로 20m + 기존그늘막 150m 제외
 │   ├── visualization.py          # Folium (레이어 컨트롤, 보행로·그늘막 오버레이)
@@ -115,24 +124,32 @@ project_1/
 
 ---
 
-## 5. AI 알고리즘 (3단계)
+## 5. AI 알고리즘 (CV 통합 후)
 
 ```
-STEP 1 — 필요도 점수
-  Score = 0.30·pop + 0.30·lst + 0.20·vuln − 0.15·shadeCov − 0.05·natural
-          (각 항목 MinMax 정규화 후 가중합)
+CV-A: V-World 항공사진(z15 48타일) + Mobile-SAM zero-shot
+        → buildings.geojson (실측 건물 30동) → 자연그늘 시뮬레이션 정확도 ↑
+
+CV-B: Mapillary 거리뷰(동작구 1,249장) + SegFormer (CityScapes 19 classes)
+        → 후보 격자별 shade_deficit = walkable × (1 − building − vegetation)
+
+STEP 1 — 6 피처 필요도 스코어
+  Score = 0.25·pop + 0.25·lst + 0.20·vuln
+        − 0.15·shadeCov − 0.05·natural   (CV-A)
+        + 0.15·streetview_deficit         (CV-B)
+        (각 피처 MinMax 정규화 후 가중합)
 
 STEP 2 — 공간 필터링
+  · 보행로·횡단보도 20m 이내, 폭 ≥ 2m
   · 기존 그늘막 반경 150m 외
-  · 인도 폭 ≥ 2m (sidewalks 데이터 확보 시 활성)
   · 상위 TOP 10
 
-STEP 3 — LLM 근거 생성
-  · OPENAI_API_KEY 존재 시 gpt-4o-mini 호출
-  · 없으면 룰베이스 템플릿 fallback
+STEP 3 — 시나리오 5종 + LLM 근거
+  · 기본 / 고령자 / 폭염 / 유동인구 / 보행환경(NEW)
+  · OPENAI_API_KEY 있으면 gpt-4o-mini, 없으면 룰베이스
 ```
 
-가중치는 `src/config.py` 의 `WEIGHTS` dict 에서 조정.
+가중치는 `src/config.py` 의 `WEIGHTS` / `SCENARIOS` 에서 조정.
 
 ---
 
@@ -181,9 +198,11 @@ python -X utf8 main.py
 ### P1 — 알고리즘 고도화
 - [x] ~~시간대별 인구 가중 (오후 1~3시 가중치 ↑)~~ 완료
 - [x] ~~가중치 민감도 분석 (WEIGHTS 변경 시 TOP 10 변화 추적)~~ 완료
-- [x] ~~**자연 그늘** 반영 — 건물 footprint + 오후 3시 태양위치(고도 52°·방위 252°) 그림자 시뮬레이션~~ 완료
-     (실데이터 확보 시 `data/raw/buildings.geojson` 로 자동 교체)
+- [x] ~~**자연 그늘** 반영~~ 완료 → CV-A로 진화 (실측 건물 30동)
+- [x] ~~**CV-A: SAM 건물 추출**~~ 완료 — V-World z15 + Mobile-SAM
+- [x] ~~**CV-B: 거리뷰 segmentation**~~ 완료 — Mapillary + SegFormer CityScapes
 - [ ] 격자 스코어 캐싱 (parquet 저장 → 재실행 속도 ↑)
+- [ ] CV-B 매핑 거리 임계값(500m) 튜닝 — 더 많은 격자에 deficit 부여
 
 ### P2 — 발표·검증
 - [x] ~~3대 집중구역 검증~~ 완료 (사당-이수 2곳, 상도로 3곳 일치)

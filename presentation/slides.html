@@ -176,7 +176,7 @@
       <li>시나리오 민감도 = 금리 시나리오 스트레스 테스트와 <b>동형(同形)</b></li>
     </ul>
   </div>
-  <div class="footer"><span>동작구 그늘막 · 한영재 · 2025961227</span><span>2 / 12</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재 · 2025961227</span><span>2 / 14</span></div>
 </section>
 
 <!-- 3. 파이프라인 -->
@@ -200,7 +200,7 @@
     <code>rationales.json</code> · <code>scenarios_comparison.csv</code> ·
     <code>focus_areas_validation.json</code>
   </p>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>3 / 12</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>3 / 14</span></div>
 </section>
 
 <!-- 4. 데이터 5종 -->
@@ -228,7 +228,7 @@
     ⚙ <code>data/raw/*.csv·geojson</code> 배치 시 <code>data_loader.py</code>가 자동 전환
     → 현재는 동작구 실제 거점(역세권·시장·주거축) 기반 더미 데이터로 파이프라인 검증
   </p>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>4 / 12</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>4 / 14</span></div>
 </section>
 
 <!-- 5. 알고리즘 -->
@@ -237,20 +237,22 @@
     <h2>알고리즘 · Score 식</h2>
     <h3>MinMax 정규화 후 가중합 (음수 가중치 = 페널티)</h3>
   </div>
-  <div class="score-box">
-    Score = 0.30·popdens + 0.30·lst + 0.20·vuln − 0.15·shade − 0.05·natural
+  <div class="score-box" style="font-size:1.05em;">
+    Score = 0.25·popdens + 0.25·lst + 0.20·vuln<br>
+    − 0.15·shade − 0.05·natural + 0.15·streetview_deficit
   </div>
-  <ul style="font-size:0.88em;">
-    <li><b style="color:var(--c-primary)">popdens (+0.30)</b> — 시간대 가중 유동인구 (9~18시, 오후 1~3시 1.0 피크)</li>
-    <li><b style="color:var(--c-warn)">lst (+0.30)</b> — 지표면 온도, 오후 피크 시간대 가중 평균</li>
-    <li><b style="color:var(--c-vuln)">vuln (+0.20)</b> — 고령자·어린이 비율 (취약계층)</li>
-    <li><b style="color:var(--c-sub)">shade (−0.15)</b> — 기존 그늘막 반경 150m 내 커버리지 (이미 된 곳은 감점)</li>
-    <li><b style="color:var(--c-sub)">natural (−0.05)</b> — 건물 그림자 커버 비율 (자연 그늘 페널티, <span class="highlight">신규 활성화</span>)</li>
+  <ul style="font-size:0.82em;">
+    <li><b style="color:var(--c-primary)">popdens (+0.25)</b> — 시간대 가중 유동인구</li>
+    <li><b style="color:var(--c-warn)">lst (+0.25)</b> — 지표면 온도, 오후 피크 가중</li>
+    <li><b style="color:var(--c-vuln)">vuln (+0.20)</b> — 고령자·어린이 비율</li>
+    <li><b style="color:var(--c-sub)">shade (−0.15)</b> — 기존 그늘막 커버리지 (감점)</li>
+    <li><b style="color:var(--c-sub)">natural (−0.05)</b> — <b>CV-A</b> SAM 추출 건물 그림자</li>
+    <li><b style="color:var(--c-accent)">streetview_deficit (+0.15)</b> — <b>CV-B</b> SegFormer 거리뷰 분석 <span class="highlight">NEW</span></li>
   </ul>
   <p style="color:var(--c-primary); font-weight:bold; font-size:0.85em;">
     🎚 Streamlit 대시보드에서 슬라이더로 실시간 조정 가능 · 시나리오별 프리셋 4종 내장
   </p>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>5 / 12</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>5 / 14</span></div>
 </section>
 
 <!-- 6. 공간 필터링 결과 + 지도 -->
@@ -267,13 +269,13 @@
   </div>
   <iframe class="map-frame" src="../output/shade_map.html" loading="lazy"></iframe>
   <div class="map-caption">▲ shade_map.html — 기본 시나리오 TOP 10 지도 (실시간 임베드)</div>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>6 / 12</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>6 / 14</span></div>
 </section>
 
 <!-- 7. 자연그늘 -->
 <section>
   <div class="title-bar">
-    <h2>자연 그늘 시뮬레이션 <span class="badge pass">NEW</span></h2>
+    <h2>자연 그늘 시뮬레이션</h2>
     <h3>건물 footprint + 오후 3시 태양위치 → 격자별 그림자 커버 비율</h3>
   </div>
   <div class="two-col">
@@ -286,83 +288,137 @@
     </ul>
     <div>
       <div class="callout warn">
-        <b>효과 검증</b>
+        <b>입력 데이터의 진화</b>
         <ul style="margin:0.4em 0 0 1em; font-size:0.9em;">
-          <li>강건 입지 <b>4 → 3</b>곳 (식별력 ↑)</li>
-          <li>상도로 TOP5 <b>0.395 → 0.382</b></li>
-          <li>고령자 시나리오 최고 <b>0.580 → 0.567</b></li>
+          <li>v1: 더미 19동 하드코딩</li>
+          <li>v2: <b>CV-A로 실측 30동 자동 추출</b> (다음 슬라이드)</li>
+          <li>실데이터 <code>buildings.geojson</code> 자동 교체 구조</li>
         </ul>
       </div>
-      <p style="font-size:0.8em; color:var(--c-sub); margin-top:0.7em;">
-        실데이터 <code>data/raw/buildings.geojson</code> 확보 시 자동 교체 구조
-      </p>
     </div>
   </div>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>7 / 12</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>7 / 14</span></div>
 </section>
 
-<!-- 8. 시나리오 민감도 + 지도 -->
+<!-- 8. CV-A: 위성 + SAM (NEW) -->
 <section>
   <div class="title-bar">
-    <h2>시나리오 민감도 분석</h2>
-    <h3>정책 관점별 가중치 프리셋 × 동일 피처셋 → TOP 10 변화</h3>
+    <h2>CV-A · 위성 항공사진 + Mobile-SAM <span class="badge pass">CV</span></h2>
+    <h3>딥러닝 zero-shot segmentation으로 동작구 건물 자동 추출</h3>
+  </div>
+  <div class="two-col">
+    <ul style="font-size:0.85em;">
+      <li><b>V-World WMTS z=15</b> 항공사진 → 동작구 BBOX <b>48 타일</b> 합성</li>
+      <li><b>Mobile-SAM</b> (Meta, 2023) — 40MB 경량 SAM, CPU 추론 가능</li>
+      <li>필터: 면적 200~30k px², 종횡비 0.2~5, 평균 밝기 80~220</li>
+      <li>결과: 더미 19동 → <b>실측 30동</b> 자동 추출</li>
+      <li>픽셀 → EPSG:3857 → WGS84 polygon → <code>buildings.geojson</code></li>
+      <li>파이프라인 첫 실행 시 자동 1회, 이후 캐시 사용</li>
+    </ul>
+    <div class="callout">
+      <b style="color:var(--c-primary)">📁 산출물</b>
+      <ul style="margin:0.4em 0 0 1em; font-size:0.85em;">
+        <li><code>output/cv_buildings_overlay.png</code></li>
+        <li>2048×1536 위성 + SAM 노란 마스크</li>
+        <li>+ 추출 polygon 녹색 외곽선</li>
+        <li>30동 분포: 노량진 · 사당 · 이수<br>
+            상도로 · 장승배기 · 흑석동</li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>8 / 14</span></div>
+</section>
+
+<!-- 9. CV-B: 거리뷰 + SegFormer (NEW) -->
+<section>
+  <div class="title-bar">
+    <h2>CV-B · 거리뷰 + SegFormer (CityScapes) <span class="badge pass">CV</span></h2>
+    <h3>지면 시점에서 본 보행 환경을 19-class 의미 분할</h3>
+  </div>
+  <div class="two-col">
+    <ul style="font-size:0.85em;">
+      <li><b>Mapillary</b> — 동작구 BBOX 4×4 분할 검색 → <b>1,249장</b> 발견</li>
+      <li>후보 19개 격자에 nearest 매핑 → 격자당 ≤3장 다운로드</li>
+      <li><b>HuggingFace SegFormer-b0</b> (CityScapes 19 classes pretrained)</li>
+      <li>주요 클래스: building · vegetation · road · sidewalk · sky</li>
+      <li>선행연구: <b>MIT Treepedia</b>, Place Pulse 2.0 응용</li>
+    </ul>
+    <div>
+      <div class="score-box" style="font-size:0.9em;">
+        deficit = (road + sidewalk)<br>
+        × (1 − building − vegetation)
+      </div>
+      <div class="callout warn" style="margin-top:0.5em;">
+        <b>📊 결과</b>
+        <ul style="margin:0.4em 0 0 1em; font-size:0.85em;">
+          <li>TOP10 평균 deficit: <b>0.127</b></li>
+          <li>Score 식 <b>6번째 피처</b> 통합</li>
+          <li>신규 시나리오 <b>"보행환경_중시"</b> 추가</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>9 / 14</span></div>
+</section>
+
+<!-- 10. 시나리오 5개 민감도 + 지도 -->
+<section>
+  <div class="title-bar">
+    <h2>시나리오 민감도 분석 (5개 프리셋)</h2>
+    <h3>정책 관점별 가중치 × 동일 피처셋 → TOP 10 변화</h3>
   </div>
   <div class="two-col">
     <div>
-      <table>
+      <table style="font-size:0.65em;">
         <thead><tr><th>시나리오</th><th>강조</th><th>최고</th><th>유니크</th></tr></thead>
         <tbody>
-          <tr><td>기본</td><td>균형 (30/30/20)</td><td>0.574</td><td>0곳</td></tr>
-          <tr><td><b>고령자</b></td><td>vuln 0.45</td><td><b>0.567</b></td><td><b>4곳</b></td></tr>
-          <tr><td>폭염</td><td>lst 0.45</td><td>0.617</td><td>0곳</td></tr>
-          <tr><td><b>유동인구</b></td><td>pop 0.45</td><td>0.633</td><td><b>3곳</b></td></tr>
+          <tr><td>기본</td><td>균형(25/25/20)</td><td>0.533</td><td>0곳</td></tr>
+          <tr><td><b>고령자</b></td><td>vuln 0.40</td><td><b>0.585</b></td><td><b>3곳</b></td></tr>
+          <tr><td>폭염</td><td>lst 0.40</td><td>0.577</td><td>0곳</td></tr>
+          <tr><td><b>유동인구</b></td><td>pop 0.40</td><td><b>0.610</b></td><td><b>4곳</b></td></tr>
+          <tr><td><b>보행환경 NEW</b></td><td>sv 0.40</td><td><b>0.586</b></td><td>0곳</td></tr>
         </tbody>
       </table>
       <p style="color:var(--c-accent); font-weight:bold; font-size:0.8em;">
-        💡 자연그늘 활성화로 고령자 시나리오<br>0.580 → 0.567 (페널티 의도대로 작동)
+        💡 CV-B 통합으로 "보행환경 중시" 시나리오 신규 추가<br>
+        → 정책 검증 차원이 한 단계 늘어남
       </p>
     </div>
     <div>
-      <iframe class="map-frame" style="height:400px;" src="../output/scenarios_map.html" loading="lazy"></iframe>
-      <div class="map-caption">▲ scenarios_map.html — 4개 시나리오 토글</div>
+      <iframe class="map-frame" style="height:430px;" src="../output/scenarios_map.html" loading="lazy"></iframe>
+      <div class="map-caption">▲ scenarios_map.html — 5개 시나리오 토글</div>
     </div>
   </div>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>8 / 12</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>10 / 14</span></div>
 </section>
 
-<!-- 9. 강건 입지 -->
+<!-- 11. 강건 입지 2곳 -->
 <section>
   <div class="title-bar">
     <h2>강건 입지 · Robust Location</h2>
-    <h3>4개 시나리오 공통 추천 = 어떤 정책 관점에서도 필수</h3>
+    <h3>5개 시나리오 공통 추천 = 어떤 정책 관점에서도 필수</h3>
   </div>
-  <div class="robust-grid">
-    <div class="robust-card r1">
-      <div class="hash">#1</div>
-      <div class="road">상도로</div>
-      <div class="area">상도3동 주거밀집</div>
-      <div class="coord">37.4977, 126.9341</div>
-    </div>
-    <div class="robust-card r2">
-      <div class="hash">#2</div>
-      <div class="road">상도로</div>
-      <div class="area">상도3동 주거밀집</div>
-      <div class="coord">37.4986, 126.9353</div>
-    </div>
+  <div class="robust-grid" style="grid-template-columns:repeat(2,1fr); max-width:80%; margin:1em auto;">
     <div class="robust-card r3">
-      <div class="hash">#3</div>
+      <div class="hash">#1</div>
       <div class="road">동작대로</div>
       <div class="area">사당-이수 축</div>
       <div class="coord">37.4907, 126.9647</div>
     </div>
+    <div class="robust-card r3">
+      <div class="hash">#2</div>
+      <div class="road">동작대로</div>
+      <div class="area">사당역 인근</div>
+      <div class="coord">37.4898, 126.9670</div>
+    </div>
   </div>
-  <p style="color:var(--c-primary); font-weight:bold; text-align:center; font-size:1.05em;">
-    정책적 함의 — 예산 제약 시 이 3곳이 최우선 설치 대상
+  <p style="color:var(--c-primary); font-weight:bold; text-align:center; font-size:1.1em;">
+    정책적 함의 — 예산 제약 시 이 2곳이 최우선 설치 대상
   </p>
   <p style="color:var(--c-sub); text-align:center; font-size:0.85em;">
-    자연그늘 활성화로 <b>4 → 3곳</b> · 식별력이 더 엄격해졌음
+    CV-B 보행환경 시나리오까지 통과 → 더 까다로운 검증 통과
   </p>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>9 / 12</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>11 / 14</span></div>
 </section>
 
 <!-- 10. 3대 구역 검증 -->
@@ -399,10 +455,10 @@
     우선 배치한 결과, "기존 그늘막 반경 150m 외" 제약으로 자연스럽게 후순위로 밀린 것.
     <b>이미 커버된 곳은 제외하는 알고리즘이 의도대로 작동</b>한 사례.
   </div>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>10 / 12</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>12 / 14</span></div>
 </section>
 
-<!-- 11. Streamlit 대시보드 -->
+<!-- 13. Streamlit 대시보드 -->
 <section>
   <div class="title-bar">
     <h2>인터랙티브 대시보드</h2>
@@ -424,10 +480,10 @@
       (발표 시연 시 별도 창에서<br><code>streamlit run app.py</code> 실행)
     </div>
   </div>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>11 / 12</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>13 / 14</span></div>
 </section>
 
-<!-- 12. 한계 + 요약 -->
+<!-- 14. 한계 + 요약 -->
 <section>
   <div class="title-bar">
     <h2>한계 · 다음 단계 · 한 줄 요약</h2>
@@ -436,9 +492,9 @@
     <div>
       <h3 style="color:var(--c-accent); margin:0.2em 0;">현재 한계</h3>
       <ul style="font-size:0.8em;">
-        <li>5종 데이터 모두 더미 (파이프라인은 자동 전환)</li>
+        <li>인구·LST·취약·기존그늘막 4종 더미 (파이프라인 자동 전환)</li>
         <li>LST 래스터 직접 파싱 미연결 (Landsat ST_B10)</li>
-        <li>건물 footprint 더미 19개 → 실 shp 확보 시 교체</li>
+        <li>SAM 추출 건물에 추정 높이 부여 (실 건축물대장 교체 가능)</li>
         <li>예산 제약 미반영 (K개 최적 조합 = 배낭 문제)</li>
       </ul>
     </div>
@@ -453,10 +509,11 @@
     </div>
   </div>
   <div class="callout dark">
-    데이터의 논리로, 어떤 정책 관점을 취하든 그늘막이 반드시 필요한 <span style="color:#FFEE58">3곳</span>을 찾아냈다.
-    <div class="sub">— 자연그늘 페널티까지 반영해 식별력을 한 단계 더 엄격하게</div>
+    항공사진과 거리뷰까지 컴퓨터 비전으로 읽어내,<br>
+    5가지 정책 관점 모두에서 살아남는 그늘막 강건 입지 <span style="color:#FFEE58">2곳</span>을 찾아냈다.
+    <div class="sub">— SAM(항공) + SegFormer(거리뷰) + MCDA 가중합 + 시나리오 민감도</div>
   </div>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>12 / 12</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>14 / 14</span></div>
 </section>
 
 </div></div>

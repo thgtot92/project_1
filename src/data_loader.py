@@ -18,8 +18,8 @@ import geopandas as gpd
 from shapely.geometry import Point, LineString
 from shapely.affinity import translate
 from shapely.ops import unary_union
-from .config import (DATA_RAW, CRS_WGS84, CRS_KOREA, HOUR_WEIGHTS,
-                      SUN_ALTITUDE_DEG, SUN_AZIMUTH_DEG)
+from .config import (DATA_RAW, DATA_PROCESSED, CRS_WGS84, CRS_KOREA,
+                      HOUR_WEIGHTS, SUN_ALTITUDE_DEG, SUN_AZIMUTH_DEG)
 
 
 # 동작구 실제 거점 기반 핫스팟 (lon, lat, sigma)
@@ -299,6 +299,40 @@ def load_natural_shade(grid: gpd.GeoDataFrame) -> pd.Series:
     inter = grid_m.geometry.intersection(shadow_union).area
     cover = (inter / grid_m.geometry.area).clip(0, 1)
     return pd.Series(cover.values, name="natural")
+
+
+def load_streetview_deficit(sample_points: pd.DataFrame) -> pd.Series:
+    """거리뷰 기반 그늘 결핍 지수 [0,1].
+
+    cv_streetview 가 생성한 data/processed/grid_streetview.csv 를
+    좌표 기준 nearest neighbor 매칭. 파일 없으면 모두 0 (피처 비활성).
+
+    값 의미: 클수록 보행 공간은 많은데 그늘 자원(건물·식생) 부족 → 그늘막 우선
+    """
+    fp = DATA_PROCESSED / "grid_streetview.csv"
+    if not fp.exists():
+        return pd.Series(np.zeros(len(sample_points)), name="streetview_deficit")
+
+    sv = pd.read_csv(fp)
+    if sv.empty or "shade_deficit" not in sv.columns:
+        return pd.Series(np.zeros(len(sample_points)), name="streetview_deficit")
+
+    # 격자 거리뷰 데이터에 lon/lat 가 없으면 grid_id 직접 매칭 시도
+    if "grid_lon" in sv.columns and "grid_lat" in sv.columns:
+        sv_pts = sv[["grid_lon", "grid_lat"]].rename(
+            columns={"grid_lon": "lon", "grid_lat": "lat"})
+    elif "lon" in sv.columns and "lat" in sv.columns:
+        sv_pts = sv[["lon", "lat"]]
+    else:
+        return pd.Series(np.zeros(len(sample_points)), name="streetview_deficit")
+
+    from scipy.spatial import cKDTree
+    tree = cKDTree(sv_pts.to_numpy())
+    dists, idx = tree.query(sample_points[["lon", "lat"]].to_numpy(), k=1)
+    vals = sv["shade_deficit"].to_numpy()[idx]
+    # 매칭 거리가 너무 멀면 (>500m ≈ 0.005 deg) 0 처리
+    vals = np.where(dists > 0.005, 0.0, vals)
+    return pd.Series(vals, name="streetview_deficit")
 
 
 def load_pedestrian_network() -> gpd.GeoDataFrame:

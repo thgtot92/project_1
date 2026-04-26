@@ -7,7 +7,7 @@
     "radius_m": 300,
     "reason": "수험생 유동인구 최상위, 직사광선 노출 보행 구간",
     "top_hits_in_area": 0,
-    "nearest_top_distance_m": 1355.0,
+    "nearest_top_distance_m": 1521.0,
     "hits": []
   },
   "사당역4번-이수역 축": {
@@ -24,14 +24,14 @@
         "rank": 1,
         "lat": 37.49066,
         "lon": 126.96474,
-        "score": 0.574,
+        "score": 0.533,
         "distance_m": 265.0
       },
       {
         "rank": 2,
         "lat": 37.48977,
         "lon": 126.96701,
-        "score": 0.567,
+        "score": 0.528,
         "distance_m": 167.0
       }
     ]
@@ -47,24 +47,24 @@
     "nearest_top_distance_m": 66.0,
     "hits": [
       {
-        "rank": 5,
+        "rank": 6,
         "lat": 37.49864,
         "lon": 126.93527,
-        "score": 0.382,
+        "score": 0.363,
         "distance_m": 66.0
       },
       {
-        "rank": 6,
+        "rank": 8,
         "lat": 37.49774,
         "lon": 126.93528,
-        "score": 0.373,
+        "score": 0.352,
         "distance_m": 106.0
       },
       {
-        "rank": 7,
+        "rank": 9,
         "lat": 37.49773,
         "lon": 126.93414,
-        "score": 0.363,
+        "score": 0.345,
         "distance_m": 185.0
       }
     ]

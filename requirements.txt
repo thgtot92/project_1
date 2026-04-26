@@ -11,3 +11,12 @@ python-dotenv>=1.0
 openai>=1.30
 tqdm>=4.66
 streamlit>=1.30
+# CV 의존성 (CV-A: SAM, CV-B: SegFormer)
+torch>=2.0
+torchvision>=0.15
+ultralytics>=8.0
+transformers>=4.40
+opencv-python>=4.8
+Pillow>=10.0
+# python-pptx >= 1.0 (발표자료 PPTX 생성)
+python-pptx>=1.0

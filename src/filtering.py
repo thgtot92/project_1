@@ -40,8 +40,9 @@ def _filter_by_shades(candidates: gpd.GeoDataFrame,
     return candidates.loc[mask.values]
 
 
-def pick_candidates(scored_grid: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    """score 부착 grid → 보행로 제약 + 기존그늘막 제외 + TOP_K."""
+def filter_candidates(scored_grid: gpd.GeoDataFrame,
+                       verbose: bool = True) -> gpd.GeoDataFrame:
+    """필터만 적용 (TOP K 안 자름) — 1차 후보 풀(약 19개) 산출용."""
     g = scored_grid.sort_values("score", ascending=False).copy()
     g = g.to_crs(CRS_WGS84) if g.crs != CRS_WGS84 else g
 
@@ -49,10 +50,18 @@ def pick_candidates(scored_grid: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     g = _filter_by_pedestrian(g,
                               buffer_m=20.0,
                               min_width=FILTER["min_sidewalk_width_m"])
-    print(f"    보행로 필터: {before} → {len(g)}")
+    if verbose:
+        print(f"    보행로 필터: {before} → {len(g)}")
 
     before = len(g)
     g = _filter_by_shades(g, FILTER["exclusion_radius_m"])
-    print(f"    기존그늘막 필터: {before} → {len(g)}")
+    if verbose:
+        print(f"    기존그늘막 필터: {before} → {len(g)}")
 
+    return g.reset_index(drop=True)
+
+
+def pick_candidates(scored_grid: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """score 부착 grid → 보행로 제약 + 기존그늘막 제외 + TOP_K."""
+    g = filter_candidates(scored_grid)
     return g.head(FILTER["top_k"]).reset_index(drop=True)
