@@ -427,7 +427,7 @@ def build():
                     "지면 시점에서 본 보행 환경을 19-class 의미 분할")
 
     _add_bullets(s, Inches(0.75), Inches(1.9), Inches(6.5), Inches(4.5), [
-        "Mapillary 거리뷰 — 동작구 BBOX 4×4 분할 검색 → 1,249장 발견",
+        "Mapillary 거리뷰 — 동작구 BBOX 4×4 분할 검색 → 1,302장 발견",
         "후보 19개 격자에 nearest 매핑 → 격자당 ≤3장 다운로드",
         "HuggingFace SegFormer-b0 (CityScapes 19 classes pretrained)",
         "주요 클래스: building · vegetation · road · sidewalk · sky",
@@ -471,9 +471,9 @@ def build():
     r = p.add_run(); r.text = "📊 결과"
     _set_font(r, size=14, bold=True, color=COLOR_WARN)
     for line_txt in [
-        "TOP10 평균 deficit: 0.127",
+        "TOP10 평균 deficit: 0.190",
         "Score 식 6번째 피처 통합",
-        "신규 시나리오 추가: 보행환경_중시",
+        "강건 입지 +1: 흑석동 (CV-B 부각)",
     ]:
         p = tf.add_paragraph()
         r = p.add_run(); r.text = "• " + line_txt
@@ -488,11 +488,11 @@ def build():
 
     rows = [
         ("시나리오", "강조", "최고 Score", "유니크"),
-        ("기본", "균형 (25/25/20)", "0.533", "0곳"),
-        ("고령자 중시", "vuln 0.40", "0.585", "3곳 독점"),
-        ("폭염 중시", "lst 0.40", "0.577", "0곳"),
-        ("유동인구 중시", "pop 0.40", "0.610", "4곳 독점"),
-        ("보행환경 중시 (NEW)", "streetview_deficit 0.40", "0.586", "0곳"),
+        ("기본", "균형 (25/25/20)", "0.620", "0곳"),
+        ("고령자 중시", "vuln 0.40", "0.585", "0곳"),
+        ("폭염 중시", "lst 0.40", "0.664", "1곳 독점"),
+        ("유동인구 중시", "pop 0.40", "0.726", "3곳 독점"),
+        ("보행환경 중시 (NEW)", "streetview_deficit 0.40", "0.665", "0곳"),
     ]
     left = Inches(0.75); top = Inches(1.9)
     tbl = s.shapes.add_table(rows=len(rows), cols=4,
@@ -513,7 +513,7 @@ def build():
                 cell.fill.solid()
                 cell.fill.fore_color.rgb = COLOR_PRIMARY
             else:
-                bold = ri in (2, 4, 5)  # 고령자·유동인구·보행환경 강조
+                bold = ri in (3, 4, 5)  # 폭염·유동인구·보행환경 강조
                 _set_font(r, size=13, bold=bold, color=COLOR_DARK)
 
     _add_text(s, Inches(0.75), Inches(5.2), Inches(12), Inches(0.5),
@@ -525,49 +525,50 @@ def build():
               size=14, color=COLOR_SUB)
     _add_footer(s, 10, TOTAL)
 
-    # ────────── 11. 강건 입지 2곳 ──────────
+    # ────────── 11. 강건 입지 3곳 ──────────
     s = prs.slides.add_slide(blank)
     _add_header_bar(s, "강건 입지 · Robust Location",
                     "5개 시나리오 공통 추천 = 어떤 정책 관점에서도 필수")
 
-    # 2 카드
+    # 3 카드
     robust = [
         ("37.4907, 126.9647", "동작대로", "사당-이수 축", COLOR_ACCENT),
         ("37.4898, 126.9670", "동작대로", "사당역 인근", COLOR_ACCENT),
+        ("37.5068, 126.9567", "흑석동", "한강변 주거밀집", COLOR_VULN),
     ]
-    left = Inches(2.0); top = Inches(2.0)
-    w = Inches(4.5); h = Inches(3.5); gap = Inches(0.4)
+    left = Inches(0.75); top = Inches(2.0)
+    w = Inches(3.95); h = Inches(3.2); gap = Inches(0.15)
     for i, (coord, road, area, color) in enumerate(robust):
-        x = left + Inches(i * (4.5 + 0.4))
+        x = left + Inches(i * (3.95 + 0.15))
         box = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, x, top, w, h)
         box.fill.solid()
         box.fill.fore_color.rgb = RGBColor(0xFA, 0xFA, 0xFA)
         box.line.color.rgb = color
-        box.line.width = Pt(3)
+        box.line.width = Pt(2.5)
         tf = box.text_frame; tf.word_wrap = True
         tf.margin_left = Inches(0.2); tf.margin_top = Inches(0.3)
         p = tf.paragraphs[0]; p.alignment = PP_ALIGN.CENTER
         r = p.add_run(); r.text = f"#{i+1}"
-        _set_font(r, size=18, bold=True, color=color)
+        _set_font(r, size=16, bold=True, color=color)
         p2 = tf.add_paragraph(); p2.alignment = PP_ALIGN.CENTER
         r = p2.add_run(); r.text = road
-        _set_font(r, size=32, bold=True, color=COLOR_DARK)
-        p2.space_before = Pt(10)
+        _set_font(r, size=28, bold=True, color=COLOR_DARK)
+        p2.space_before = Pt(8)
         p3 = tf.add_paragraph(); p3.alignment = PP_ALIGN.CENTER
         r = p3.add_run(); r.text = area
-        _set_font(r, size=18, color=COLOR_SUB)
-        p3.space_before = Pt(8)
+        _set_font(r, size=16, color=COLOR_SUB)
+        p3.space_before = Pt(6)
         p4 = tf.add_paragraph(); p4.alignment = PP_ALIGN.CENTER
         r = p4.add_run(); r.text = coord
-        _set_font(r, size=13, color=COLOR_SUB)
-        p4.space_before = Pt(15)
+        _set_font(r, size=12, color=COLOR_SUB)
+        p4.space_before = Pt(12)
 
-    _add_text(s, Inches(0.75), Inches(5.8), Inches(12), Inches(0.5),
-              "정책적 함의: 예산 제약 시 이 2곳이 최우선 설치 대상",
+    _add_text(s, Inches(0.75), Inches(5.5), Inches(12), Inches(0.5),
+              "정책적 함의: 예산 제약 시 이 3곳이 최우선 설치 대상",
               size=16, bold=True, color=COLOR_PRIMARY,
               align=PP_ALIGN.CENTER)
-    _add_text(s, Inches(0.75), Inches(6.4), Inches(12), Inches(0.5),
-              "CV-B 보행환경 시나리오까지 통과한 입지 → 더 까다로운 검증 통과",
+    _add_text(s, Inches(0.75), Inches(6.1), Inches(12), Inches(0.5),
+              "CV-B 보행환경 시나리오까지 통과 → 환승 축 2곳 + 흑석동 주거 1곳",
               size=13, color=COLOR_SUB, align=PP_ALIGN.CENTER)
     _add_footer(s, 11, TOTAL)
 
@@ -677,7 +678,7 @@ def build():
     _set_font(r, size=18, bold=True, color=RGBColor(0xFF, 0xEE, 0x58))
     p1b = tf.add_paragraph(); p1b.alignment = PP_ALIGN.CENTER
     r = p1b.add_run()
-    r.text = "5가지 정책 관점 모두에서 살아남는 강건 입지 2곳을 찾아냈다."
+    r.text = "5가지 정책 관점 모두에서 살아남는 강건 입지 3곳을 찾아냈다."
     _set_font(r, size=18, bold=True, color=RGBColor(0xFF, 0xEE, 0x58))
     p2 = tf.add_paragraph(); p2.alignment = PP_ALIGN.CENTER
     r = p2.add_run()

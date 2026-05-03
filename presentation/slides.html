@@ -337,7 +337,7 @@
   </div>
   <div class="two-col">
     <ul style="font-size:0.85em;">
-      <li><b>Mapillary</b> — 동작구 BBOX 4×4 분할 검색 → <b>1,249장</b> 발견</li>
+      <li><b>Mapillary</b> — 동작구 BBOX 4×4 분할 검색 → <b>1,302장</b> 발견</li>
       <li>후보 19개 격자에 nearest 매핑 → 격자당 ≤3장 다운로드</li>
       <li><b>HuggingFace SegFormer-b0</b> (CityScapes 19 classes pretrained)</li>
       <li>주요 클래스: building · vegetation · road · sidewalk · sky</li>
@@ -351,9 +351,9 @@
       <div class="callout warn" style="margin-top:0.5em;">
         <b>📊 결과</b>
         <ul style="margin:0.4em 0 0 1em; font-size:0.85em;">
-          <li>TOP10 평균 deficit: <b>0.127</b></li>
+          <li>TOP10 평균 deficit: <b>0.190</b></li>
           <li>Score 식 <b>6번째 피처</b> 통합</li>
-          <li>신규 시나리오 <b>"보행환경_중시"</b> 추가</li>
+          <li>강건 입지 +1: <b>흑석동</b> (CV-B 부각)</li>
         </ul>
       </div>
     </div>
@@ -372,11 +372,11 @@
       <table style="font-size:0.65em;">
         <thead><tr><th>시나리오</th><th>강조</th><th>최고</th><th>유니크</th></tr></thead>
         <tbody>
-          <tr><td>기본</td><td>균형(25/25/20)</td><td>0.533</td><td>0곳</td></tr>
-          <tr><td><b>고령자</b></td><td>vuln 0.40</td><td><b>0.585</b></td><td><b>3곳</b></td></tr>
-          <tr><td>폭염</td><td>lst 0.40</td><td>0.577</td><td>0곳</td></tr>
-          <tr><td><b>유동인구</b></td><td>pop 0.40</td><td><b>0.610</b></td><td><b>4곳</b></td></tr>
-          <tr><td><b>보행환경 NEW</b></td><td>sv 0.40</td><td><b>0.586</b></td><td>0곳</td></tr>
+          <tr><td>기본</td><td>균형(25/25/20)</td><td>0.620</td><td>0곳</td></tr>
+          <tr><td>고령자</td><td>vuln 0.40</td><td>0.585</td><td>0곳</td></tr>
+          <tr><td><b>폭염</b></td><td>lst 0.40</td><td><b>0.664</b></td><td><b>1곳</b></td></tr>
+          <tr><td><b>유동인구</b></td><td>pop 0.40</td><td><b>0.726</b></td><td><b>3곳</b></td></tr>
+          <tr><td><b>보행환경 NEW</b></td><td>sv 0.40</td><td><b>0.665</b></td><td>0곳</td></tr>
         </tbody>
       </table>
       <p style="color:var(--c-accent); font-weight:bold; font-size:0.8em;">
@@ -392,13 +392,13 @@
   <div class="footer"><span>동작구 그늘막 · 한영재</span><span>10 / 14</span></div>
 </section>
 
-<!-- 11. 강건 입지 2곳 -->
+<!-- 11. 강건 입지 3곳 -->
 <section>
   <div class="title-bar">
     <h2>강건 입지 · Robust Location</h2>
     <h3>5개 시나리오 공통 추천 = 어떤 정책 관점에서도 필수</h3>
   </div>
-  <div class="robust-grid" style="grid-template-columns:repeat(2,1fr); max-width:80%; margin:1em auto;">
+  <div class="robust-grid">
     <div class="robust-card r3">
       <div class="hash">#1</div>
       <div class="road">동작대로</div>
@@ -411,12 +411,18 @@
       <div class="area">사당역 인근</div>
       <div class="coord">37.4898, 126.9670</div>
     </div>
+    <div class="robust-card r1">
+      <div class="hash">#3</div>
+      <div class="road">흑석동</div>
+      <div class="area">한강변 주거밀집</div>
+      <div class="coord">37.5068, 126.9567</div>
+    </div>
   </div>
   <p style="color:var(--c-primary); font-weight:bold; text-align:center; font-size:1.1em;">
-    정책적 함의 — 예산 제약 시 이 2곳이 최우선 설치 대상
+    정책적 함의 — 예산 제약 시 이 3곳이 최우선 설치 대상
   </p>
   <p style="color:var(--c-sub); text-align:center; font-size:0.85em;">
-    CV-B 보행환경 시나리오까지 통과 → 더 까다로운 검증 통과
+    CV-B 보행환경 시나리오까지 통과 → 환승 축 2곳 + 흑석동 주거 1곳
   </p>
   <div class="footer"><span>동작구 그늘막 · 한영재</span><span>11 / 14</span></div>
 </section>
@@ -433,7 +439,7 @@
       <tr>
         <td>노량진역-수산시장</td>
         <td><span class="badge partial">△</span></td>
-        <td>0곳</td><td>1,355m</td>
+        <td>0곳</td><td>1,521m</td>
         <td>기존 그늘막 선배치 → 페널티 작동 (의도대로)</td>
       </tr>
       <tr>
@@ -510,7 +516,7 @@
   </div>
   <div class="callout dark">
     항공사진과 거리뷰까지 컴퓨터 비전으로 읽어내,<br>
-    5가지 정책 관점 모두에서 살아남는 그늘막 강건 입지 <span style="color:#FFEE58">2곳</span>을 찾아냈다.
+    5가지 정책 관점 모두에서 살아남는 그늘막 강건 입지 <span style="color:#FFEE58">3곳</span>을 찾아냈다.
     <div class="sub">— SAM(항공) + SegFormer(거리뷰) + MCDA 가중합 + 시나리오 민감도</div>
   </div>
   <div class="footer"><span>동작구 그늘막 · 한영재</span><span>14 / 14</span></div>
