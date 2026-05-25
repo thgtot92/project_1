@@ -102,15 +102,78 @@ def fetch_osm_walkable_edges(force: bool = False) -> gpd.GeoDataFrame:
     edges_path = DATA_PROCESSED / "osm_walkable_edges.geojson"
     if edges_path.exists() and not force:
         return gpd.read_file(edges_path).to_crs(CRS_WGS84)
-    # 캐시 없으면 fetch_osm_intersections 가 함께 생성
     fetch_osm_intersections(force=True)
     return gpd.read_file(edges_path).to_crs(CRS_WGS84)
+
+
+def fetch_osm_crossings(force: bool = False) -> gpd.GeoDataFrame:
+    """OSMnx 횡단보도 노드 — highway=crossing OR footway=crossing.
+
+    캐시: data/processed/osm_crossings.geojson
+    """
+    out_path = DATA_PROCESSED / "osm_crossings.geojson"
+    if out_path.exists() and not force:
+        return gpd.read_file(out_path).to_crs(CRS_WGS84)
+
+    import osmnx as ox
+    bbox = DONGJAK_BBOX
+    bbox_tuple = (bbox["min_lon"], bbox["min_lat"],
+                   bbox["max_lon"], bbox["max_lat"])
+    print(f"  [OSMnx] 동작구 BBOX 횡단보도(highway=crossing) 다운로드 중...")
+
+    # OSMnx 2.x: features_from_bbox
+    try:
+        gdf = ox.features_from_bbox(bbox=bbox_tuple,
+                                      tags={"highway": "crossing"})
+    except TypeError:
+        gdf = ox.features_from_bbox(north=bbox["max_lat"], south=bbox["min_lat"],
+                                      east=bbox["max_lon"], west=bbox["min_lon"],
+                                      tags={"highway": "crossing"})
+
+    if gdf is None or gdf.empty:
+        print("  [OSMnx] 횡단보도 0개")
+        gdf_empty = gpd.GeoDataFrame(geometry=[], crs=CRS_WGS84)
+        DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
+        gdf_empty.to_file(out_path, driver="GeoJSON")
+        return gdf_empty
+
+    gdf = gdf.to_crs(CRS_WGS84)
+    # Point 만 추출 (Way 형태의 crossing 라인은 중심점으로 환산)
+    crossings = gdf[gdf.geometry.geom_type.isin(["Point", "LineString"])].copy()
+    crossings["geometry"] = crossings.geometry.apply(
+        lambda g: g.centroid if g.geom_type != "Point" else g
+    )
+    keep = ["geometry"]
+    for c in ("highway", "crossing", "crossing_ref"):
+        if c in crossings.columns:
+            crossings[c] = crossings[c].astype(str)
+            keep.append(c)
+    crossings = crossings[keep].reset_index(drop=True)
+
+    DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
+    crossings.to_file(out_path, driver="GeoJSON")
+    print(f"  [OSMnx] {len(crossings)} 횡단보도 → {out_path}")
+    return crossings
+
+
+def fetch_pedestrian_focus_points(force: bool = False) -> gpd.GeoDataFrame:
+    """교차로 + 횡단보도 union — '보행자 결집 지점' (proximity 필터·밀도 피처용)."""
+    inter = fetch_osm_intersections(force=force)
+    cross = fetch_osm_crossings(force=force)
+    inter_pts = inter[["geometry"]].copy()
+    inter_pts["kind"] = "intersection"
+    cross_pts = cross[["geometry"]].copy()
+    cross_pts["kind"] = "crossing"
+    return gpd.GeoDataFrame(
+        pd.concat([inter_pts, cross_pts], ignore_index=True),
+        crs=CRS_WGS84,
+    )
 
 
 def compute_intersection_density(grid: gpd.GeoDataFrame,
                                    radius_m: float = 80.0,
                                    force: bool = False) -> pd.Series:
-    """각 격자 중심 기준 radius_m 내 교차로 개수.
+    """각 격자 중심 기준 radius_m 내 보행자 결집 지점(교차로 + 횡단보도) 개수.
 
     반환: pd.Series(이름=intersection_density, 원시 정수).
     """
@@ -121,31 +184,51 @@ def compute_intersection_density(grid: gpd.GeoDataFrame,
             return pd.Series(cached["intersection_density"].values,
                               name="intersection_density")
 
-    intersections = fetch_osm_intersections()
-    if intersections.empty:
+    focus = fetch_pedestrian_focus_points()
+    if focus.empty:
         return pd.Series(np.zeros(len(grid)), name="intersection_density")
 
-    inter_m = intersections.to_crs(CRS_KOREA)
+    focus_m = focus.to_crs(CRS_KOREA)
     grid_m = grid if grid.crs == CRS_KOREA else grid.to_crs(CRS_KOREA)
 
-    # 격자 중심에서 radius_m 버퍼 → 교차로 점과 intersects 카운트
     from shapely.strtree import STRtree
-    tree = STRtree(list(inter_m.geometry.values))
+    tree = STRtree(list(focus_m.geometry.values))
     counts = []
     for cell in grid_m.geometry.centroid:
         buf = cell.buffer(radius_m)
         idxs = tree.query(buf)
-        # STRtree.query: 후보 idx 배열 → 정확 검사
         hit = 0
         for idx in idxs:
-            if inter_m.geometry.iloc[int(idx)].within(buf):
+            if focus_m.geometry.iloc[int(idx)].within(buf):
                 hit += 1
         counts.append(hit)
 
     cached = pd.DataFrame({"intersection_density": counts})
     cached.to_csv(cache_path, index=False)
-    print(f"  [OSMnx] 격자별 교차로 밀도 (radius={radius_m}m) → {cache_path}")
+    print(f"  [OSMnx] 격자별 결집지점 밀도 (교차로+횡단보도, "
+          f"radius={radius_m}m) → {cache_path}")
     return pd.Series(counts, name="intersection_density")
+
+
+def compute_focus_proximity_mask(grid: gpd.GeoDataFrame,
+                                   max_dist_m: float = 50.0) -> np.ndarray:
+    """각 격자 centroid 에서 가장 가까운 교차로/횡단보도까지 거리 ≤ max_dist_m 인지.
+
+    반환: bool numpy array (True = 통과).
+    """
+    focus = fetch_pedestrian_focus_points()
+    if focus.empty:
+        return np.ones(len(grid), dtype=bool)
+
+    focus_m = focus.to_crs(CRS_KOREA)
+    grid_m = grid if grid.crs == CRS_KOREA else grid.to_crs(CRS_KOREA)
+
+    # 모든 focus 점에서 단일 union → 격자 centroid 의 distance 계산
+    from shapely.ops import unary_union
+    focus_union = unary_union(list(focus_m.geometry.values))
+    centroids = grid_m.geometry.centroid
+    dists = np.array([c.distance(focus_union) for c in centroids])
+    return dists <= max_dist_m
 
 
 def render_overlay():

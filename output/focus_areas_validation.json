@@ -6,9 +6,17 @@
     ],
     "radius_m": 300,
     "reason": "수험생 유동인구 최상위, 직사광선 노출 보행 구간",
-    "top_hits_in_area": 0,
-    "nearest_top_distance_m": 2843.0,
-    "hits": []
+    "top_hits_in_area": 1,
+    "nearest_top_distance_m": 291.0,
+    "hits": [
+      {
+        "rank": 6,
+        "lat": 37.5131,
+        "lon": 126.94421,
+        "score": 0.333,
+        "distance_m": 291.0
+      }
+    ]
   },
   "사당역4번-이수역 축": {
     "center": [
@@ -17,56 +25,35 @@
     ],
     "radius_m": 400,
     "reason": "환승 대기 인구 밀집, 오후 열스트레스 급증",
-    "top_hits_in_area": 7,
+    "top_hits_in_area": 4,
     "nearest_top_distance_m": 253.0,
     "hits": [
       {
         "rank": 1,
-        "lat": 37.49066,
-        "lon": 126.96474,
-        "score": 0.551,
-        "distance_m": 265.0
-      },
-      {
-        "rank": 2,
         "lat": 37.48976,
         "lon": 126.96362,
-        "score": 0.546,
+        "score": 0.469,
         "distance_m": 253.0
       },
       {
-        "rank": 3,
-        "lat": 37.48616,
-        "lon": 126.9659,
-        "score": 0.524,
-        "distance_m": 260.0
-      },
-      {
-        "rank": 4,
+        "rank": 2,
         "lat": 37.48975,
         "lon": 126.96248,
-        "score": 0.506,
+        "score": 0.437,
         "distance_m": 340.0
       },
       {
-        "rank": 5,
-        "lat": 37.49157,
-        "lon": 126.967,
-        "score": 0.495,
-        "distance_m": 353.0
-      },
-      {
-        "rank": 8,
+        "rank": 4,
         "lat": 37.49068,
         "lon": 126.96813,
-        "score": 0.424,
+        "score": 0.364,
         "distance_m": 307.0
       },
       {
-        "rank": 10,
+        "rank": 5,
         "lat": 37.48617,
         "lon": 126.96703,
-        "score": 0.402,
+        "score": 0.335,
         "distance_m": 275.0
       }
     ]
@@ -79,7 +66,7 @@
     "radius_m": 300,
     "reason": "고령자 비율 높은 주거 밀집, 대체 그늘 부족",
     "top_hits_in_area": 0,
-    "nearest_top_distance_m": 2403.0,
+    "nearest_top_distance_m": 1778.0,
     "hits": []
   }
 }

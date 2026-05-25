@@ -56,6 +56,23 @@ def _filter_by_buildings(candidates: gpd.GeoDataFrame,
     return candidates.loc[mask.values]
 
 
+def _filter_by_focus_proximity(candidates: gpd.GeoDataFrame,
+                                  max_dist_m: float = 50.0) -> gpd.GeoDataFrame:
+    """격자 centroid 가 OSMnx 교차로 OR 횡단보도에서 max_dist_m 이내인 것만 통과.
+
+    보행자가 실제로 모이는 지점 옆에 그늘막 우선 배치를 강제.
+    """
+    from . import osm_intersections
+    try:
+        mask = osm_intersections.compute_focus_proximity_mask(
+            candidates, max_dist_m=max_dist_m
+        )
+    except Exception as e:
+        print(f"    [warn] focus proximity 필터 실패 → 통과: {e}")
+        return candidates
+    return candidates.loc[mask]
+
+
 def filter_candidates(scored_grid: gpd.GeoDataFrame,
                        verbose: bool = True) -> gpd.GeoDataFrame:
     """필터만 적용 (TOP K 안 자름) — 1차 후보 풀 산출용.
@@ -81,6 +98,11 @@ def filter_candidates(scored_grid: gpd.GeoDataFrame,
     g = _filter_by_buildings(g, inset_m=5.0)
     if verbose:
         print(f"    건물 안 centroid 컷: {before} → {len(g)}")
+
+    before = len(g)
+    g = _filter_by_focus_proximity(g, max_dist_m=50.0)
+    if verbose:
+        print(f"    교차로/횡단보도 50m 근접: {before} → {len(g)}")
 
     return g.reset_index(drop=True)
 

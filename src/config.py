@@ -39,46 +39,46 @@ GRID_SIZE_M = 100
 # - streetview_deficit: 거리뷰 segmentation 으로 산출 (CV-B)
 # - intersection_density: OSMnx 교차로 밀도 (보행자 결집 지점)
 WEIGHTS = {
-    "popdens":              0.22,   # 유동인구
-    "lst":                  0.22,   # 지표면 온도
+    "popdens":              0.18,   # 유동인구
+    "lst":                  0.18,   # 지표면 온도
     "vuln":                 0.18,   # 취약계층
     "shade":               -0.15,   # 기존 그늘막 (페널티)
     "natural":             -0.05,   # 자연 그늘 (CV-A + DSM)
-    "streetview_deficit":   0.13,   # 거리뷰 그늘 결핍 (CV-B)
-    "intersection_density": 0.10,   # 교차로 밀도 (OSMnx)
+    "streetview_deficit":   0.12,   # 거리뷰 그늘 결핍 (CV-B)
+    "intersection_density": 0.20,   # 교차로+횡단보도 밀도 (OSMnx) — 보행자 결집 강조
 }
 
 # 시나리오 프리셋 (정책 관점별 가중치)
 SCENARIOS = {
     "기본": {
-        "popdens": 0.22, "lst": 0.22, "vuln": 0.18,
+        "popdens": 0.18, "lst": 0.18, "vuln": 0.18,
         "shade": -0.15, "natural": -0.05,
-        "streetview_deficit": 0.13, "intersection_density": 0.10,
+        "streetview_deficit": 0.12, "intersection_density": 0.20,
     },
     "고령자_중시": {
-        "popdens": 0.13, "lst": 0.18, "vuln": 0.38,
+        "popdens": 0.10, "lst": 0.15, "vuln": 0.38,
         "shade": -0.10, "natural": -0.05,
-        "streetview_deficit": 0.13, "intersection_density": 0.08,
+        "streetview_deficit": 0.12, "intersection_density": 0.18,
     },
     "폭염_중시": {
-        "popdens": 0.13, "lst": 0.38, "vuln": 0.13,
+        "popdens": 0.10, "lst": 0.38, "vuln": 0.10,
         "shade": -0.10, "natural": -0.10,
-        "streetview_deficit": 0.13, "intersection_density": 0.08,
+        "streetview_deficit": 0.12, "intersection_density": 0.18,
     },
     "유동인구_중시": {
-        "popdens": 0.38, "lst": 0.13, "vuln": 0.13,
+        "popdens": 0.38, "lst": 0.10, "vuln": 0.10,
         "shade": -0.10, "natural": -0.05,
-        "streetview_deficit": 0.15, "intersection_density": 0.10,
+        "streetview_deficit": 0.12, "intersection_density": 0.20,
     },
     "보행환경_중시": {  # CV-B 강조
-        "popdens": 0.13, "lst": 0.13, "vuln": 0.13,
+        "popdens": 0.10, "lst": 0.10, "vuln": 0.10,
         "shade": -0.10, "natural": -0.05,
-        "streetview_deficit": 0.35, "intersection_density": 0.13,
+        "streetview_deficit": 0.32, "intersection_density": 0.18,
     },
-    "교차로_중시": {  # NEW: OSMnx 교차로 강조 (보행자 결집)
-        "popdens": 0.18, "lst": 0.15, "vuln": 0.13,
+    "교차로_중시": {  # OSMnx 교차로+횡단보도 최강조
+        "popdens": 0.10, "lst": 0.10, "vuln": 0.10,
         "shade": -0.10, "natural": -0.05,
-        "streetview_deficit": 0.13, "intersection_density": 0.30,
+        "streetview_deficit": 0.10, "intersection_density": 0.40,
     },
 }
 
