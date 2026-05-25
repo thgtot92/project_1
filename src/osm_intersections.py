@@ -30,20 +30,10 @@ WALKABLE_HIGHWAYS = [
 ]
 
 
-def fetch_osm_intersections(force: bool = False) -> gpd.GeoDataFrame:
-    """동작구 BBOX 안의 교차로(노드 street_count >= 3) GeoDataFrame.
-
-    캐시: data/processed/osm_intersections.geojson (있으면 재사용).
-    """
-    out_path = DATA_PROCESSED / "osm_intersections.geojson"
-    if out_path.exists() and not force:
-        return gpd.read_file(out_path).to_crs(CRS_WGS84)
-
+def _fetch_walk_graph():
+    """OSMnx walkable highway 그래프 다운로드 (캐시는 osmnx 자체가 처리)."""
     import osmnx as ox
     bbox = DONGJAK_BBOX
-    print(f"  [OSMnx] 동작구 BBOX 도로 그래프 다운로드 중...")
-
-    # OSMnx 2.x 시그니처: bbox = (left, bottom, right, top)
     bbox_tuple = (bbox["min_lon"], bbox["min_lat"],
                    bbox["max_lon"], bbox["max_lat"])
     custom_filter = '["highway"~"' + "|".join(WALKABLE_HIGHWAYS) + '"]'
@@ -51,18 +41,33 @@ def fetch_osm_intersections(force: bool = False) -> gpd.GeoDataFrame:
         G = ox.graph_from_bbox(bbox=bbox_tuple, network_type="walk",
                                  custom_filter=custom_filter, simplify=True)
     except TypeError:
-        # OSMnx 1.x fallback (north/south/east/west)
         G = ox.graph_from_bbox(north=bbox["max_lat"], south=bbox["min_lat"],
                                  east=bbox["max_lon"], west=bbox["min_lon"],
                                  network_type="walk",
                                  custom_filter=custom_filter, simplify=True)
+    return G, ox
 
-    nodes_gdf, _ = ox.graph_to_gdfs(G)
+
+def fetch_osm_intersections(force: bool = False) -> gpd.GeoDataFrame:
+    """동작구 BBOX 안의 교차로(노드 street_count >= 3) GeoDataFrame.
+
+    캐시: data/processed/osm_intersections.geojson (있으면 재사용).
+    walkable edges 캐시도 같은 호출에서 함께 생성.
+    """
+    out_path = DATA_PROCESSED / "osm_intersections.geojson"
+    edges_path = DATA_PROCESSED / "osm_walkable_edges.geojson"
+    if out_path.exists() and edges_path.exists() and not force:
+        return gpd.read_file(out_path).to_crs(CRS_WGS84)
+
+    print(f"  [OSMnx] 동작구 BBOX 도로 그래프 다운로드 중...")
+    G, ox = _fetch_walk_graph()
+
+    nodes_gdf, edges_gdf = ox.graph_to_gdfs(G)
     nodes_gdf = nodes_gdf.to_crs(CRS_WGS84)
+    edges_gdf = edges_gdf.to_crs(CRS_WGS84)
 
     # 교차로: street_count >= 3 (T자·교차로). 막다른 길(1)·중간점(2) 제외
     if "street_count" not in nodes_gdf.columns:
-        # OSMnx 일부 버전에서 noticeable count
         nodes_gdf = nodes_gdf.assign(
             street_count=ox.stats.count_streets_per_node(G).values
         )
@@ -73,7 +78,33 @@ def fetch_osm_intersections(force: bool = False) -> gpd.GeoDataFrame:
     DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
     intersections.to_file(out_path, driver="GeoJSON")
     print(f"  [OSMnx] {len(intersections)} 교차로 → {out_path}")
+
+    # walkable edges 도 동시 저장 (보행로 필터 입력)
+    # highway 컬럼이 list 일 수 있으니 정규화
+    edges_export = edges_gdf.copy()
+    if "highway" in edges_export.columns:
+        edges_export["highway"] = edges_export["highway"].astype(str)
+    # name, length 만 보존 (다른 컬럼은 fiona 가 list/dict 직렬화 실패 가능)
+    keep_cols = ["highway", "geometry"]
+    for c in ("name", "length", "lanes", "width"):
+        if c in edges_export.columns:
+            edges_export[c] = edges_export[c].astype(str)
+            keep_cols.append(c)
+    edges_export = edges_export.reset_index(drop=True)[keep_cols]
+    edges_export.to_file(edges_path, driver="GeoJSON")
+    print(f"  [OSMnx] {len(edges_export)} walkable edges → {edges_path}")
+
     return intersections
+
+
+def fetch_osm_walkable_edges(force: bool = False) -> gpd.GeoDataFrame:
+    """OSMnx walkable highway edges (LineString) — 보행로 필터 입력."""
+    edges_path = DATA_PROCESSED / "osm_walkable_edges.geojson"
+    if edges_path.exists() and not force:
+        return gpd.read_file(edges_path).to_crs(CRS_WGS84)
+    # 캐시 없으면 fetch_osm_intersections 가 함께 생성
+    fetch_osm_intersections(force=True)
+    return gpd.read_file(edges_path).to_crs(CRS_WGS84)
 
 
 def compute_intersection_density(grid: gpd.GeoDataFrame,

@@ -431,16 +431,45 @@ def load_streetview_deficit(sample_points: pd.DataFrame) -> pd.Series:
 
 
 def load_pedestrian_network() -> gpd.GeoDataFrame:
-    """보행로 + 횡단보도 네트워크 (LineString)."""
+    """보행로 + 횡단보도 네트워크 (LineString).
+
+    우선순위:
+      1) data/raw/pedestrian.geojson (사용자 직접 배치 시 단독 사용)
+      2) OSMnx walkable highway edges (data/processed/osm_walkable_edges.geojson)
+         + 더미 _PEDESTRIAN_ROUTES (도로명 한국어 라벨 보조용)
+      3) 더미만 (OSMnx 캐시 없을 때 fallback)
+    """
     fp = DATA_RAW / "pedestrian.geojson"
     if fp.exists():
         return gpd.read_file(fp).to_crs(CRS_WGS84)
-    lines = [{
+
+    dummy_lines = [{
         "geometry": LineString(r["coords"]),
         "type": r["type"],
         "width": r["width"],
     } for r in _PEDESTRIAN_ROUTES]
-    return gpd.GeoDataFrame(lines, crs=CRS_WGS84)
+    dummy_gdf = gpd.GeoDataFrame(dummy_lines, crs=CRS_WGS84)
+
+    # OSMnx walkable edges 캐시 있으면 union
+    osm_edges_path = DATA_PROCESSED / "osm_walkable_edges.geojson"
+    if osm_edges_path.exists():
+        osm_gdf = gpd.read_file(osm_edges_path).to_crs(CRS_WGS84)
+        # OSM edges 는 type/width 컬럼 부재 → 기본값 부여
+        osm_gdf["type"] = osm_gdf.get("highway", "sidewalk").astype(str)
+        # OSM 'width' 가 문자열이면 숫자 변환 시도, 실패 시 기본 3.0m
+        if "width" in osm_gdf.columns:
+            osm_gdf["width"] = pd.to_numeric(osm_gdf["width"], errors="coerce")
+            osm_gdf["width"] = osm_gdf["width"].fillna(3.0)
+        else:
+            osm_gdf["width"] = 3.0
+        merged = gpd.GeoDataFrame(
+            pd.concat([dummy_gdf, osm_gdf[["geometry", "type", "width"]]],
+                      ignore_index=True),
+            crs=CRS_WGS84,
+        )
+        return merged
+
+    return dummy_gdf
 
 
 def load_sidewalks() -> gpd.GeoDataFrame | None:

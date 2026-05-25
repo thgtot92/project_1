@@ -40,23 +40,47 @@ def _filter_by_shades(candidates: gpd.GeoDataFrame,
     return candidates.loc[mask.values]
 
 
+def _filter_by_buildings(candidates: gpd.GeoDataFrame,
+                          inset_m: float = 5.0) -> gpd.GeoDataFrame:
+    """격자 centroid 가 건물 footprint 안(또는 inset_m 이내)에 있으면 제외.
+
+    "건물 위 추천" 시각적 오류 방지. NGII/SAM 건물 입력 사용.
+    inset_m: 건물 외곽에서 안쪽으로 살짝 확장(buffer)해 처마밑·외벽 옆도 컷.
+    """
+    buildings = data_loader.load_buildings().to_crs(CRS_KOREA)
+    if buildings.empty:
+        return candidates
+    union = buildings.buffer(inset_m).unary_union
+    cand_m = candidates.to_crs(CRS_KOREA)
+    mask = ~cand_m.geometry.centroid.within(union)
+    return candidates.loc[mask.values]
+
+
 def filter_candidates(scored_grid: gpd.GeoDataFrame,
                        verbose: bool = True) -> gpd.GeoDataFrame:
-    """필터만 적용 (TOP K 안 자름) — 1차 후보 풀(약 19개) 산출용."""
+    """필터만 적용 (TOP K 안 자름) — 1차 후보 풀 산출용.
+
+    OSMnx walkable highway 통합으로 도로망이 풍부해진 만큼 buffer 를 좁힘.
+    """
     g = scored_grid.sort_values("score", ascending=False).copy()
     g = g.to_crs(CRS_WGS84) if g.crs != CRS_WGS84 else g
 
     before = len(g)
     g = _filter_by_pedestrian(g,
-                              buffer_m=20.0,
+                              buffer_m=5.0,
                               min_width=FILTER["min_sidewalk_width_m"])
     if verbose:
-        print(f"    보행로 필터: {before} → {len(g)}")
+        print(f"    보행로 필터(5m): {before} → {len(g)}")
 
     before = len(g)
     g = _filter_by_shades(g, FILTER["exclusion_radius_m"])
     if verbose:
         print(f"    기존그늘막 필터: {before} → {len(g)}")
+
+    before = len(g)
+    g = _filter_by_buildings(g, inset_m=5.0)
+    if verbose:
+        print(f"    건물 안 centroid 컷: {before} → {len(g)}")
 
     return g.reset_index(drop=True)
 
