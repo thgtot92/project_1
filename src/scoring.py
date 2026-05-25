@@ -57,11 +57,25 @@ def compute_scores(grid: gpd.GeoDataFrame,
     shade_cov = _shade_coverage(cent_gdf, shades,
                                 radius_m=FILTER["exclusion_radius_m"])
 
-    # 자연 그늘 (CV-A): 건물 footprint + 오후 피크 태양 위치로 그림자 시뮬레이션
-    nat = data_loader.load_natural_shade(grid)
+    # 자연 그늘 (CV-A): SAM+NGII 건물 + 오후 피크 태양위치 시뮬레이션
+    nat_cv_a = data_loader.load_natural_shade(grid)
 
-    # 거리뷰 그늘 결핍 (CV-B): grid_streetview.csv 가 있으면 nearest 매칭, 없으면 0
+    # 흑석동 DSM 누적 그림자 (Deep Umbra 영감): 흑석동 격자만 유효값, 나머지 NaN
+    nat_dsm = data_loader.load_heukseok_dsm_shadow(grid)
+
+    # natural 결합: 흑석동 격자는 DSM 누적값으로 교체, 나머지는 CV-A
+    nat = nat_cv_a.copy()
+    if nat_dsm is not None:
+        mask = ~pd.isna(nat_dsm)
+        if mask.any():
+            nat = nat.copy()
+            nat.loc[mask.values] = nat_dsm[mask].values
+
+    # 거리뷰 그늘 결핍 (CV-B)
     sv_deficit = data_loader.load_streetview_deficit(pts)
+
+    # 교차로 밀도 (OSMnx)
+    inter_density = data_loader.load_intersection_density(pts)
 
     out = grid.copy()
     out["lon"] = pts["lon"].values
@@ -71,23 +85,28 @@ def compute_scores(grid: gpd.GeoDataFrame,
     out["vuln_ratio"] = vuln.values
     out["shade_cov"] = shade_cov.values
     out["natural"] = nat.values
+    out["natural_cv_a"] = nat_cv_a.values
+    out["natural_dsm"] = nat_dsm.values if nat_dsm is not None else np.nan
     out["sv_deficit"] = sv_deficit.values
+    out["inter_density"] = inter_density.values
 
     nrm = pd.DataFrame({
-        "popdens":            _minmax(pop),
-        "lst":                _minmax(lst),
-        "vuln":               _minmax(vuln),
-        "shade":              _minmax(shade_cov),
-        "natural":            _minmax(nat),
-        "streetview_deficit": _minmax(sv_deficit),
+        "popdens":              _minmax(pop),
+        "lst":                  _minmax(lst),
+        "vuln":                 _minmax(vuln),
+        "shade":                _minmax(shade_cov),
+        "natural":              _minmax(nat),
+        "streetview_deficit":   _minmax(sv_deficit),
+        "intersection_density": _minmax(inter_density),
     })
     out["score"] = (
-        W["popdens"]            * nrm["popdens"]
-        + W["lst"]              * nrm["lst"]
-        + W["vuln"]             * nrm["vuln"]
-        + W["shade"]            * nrm["shade"]
-        + W["natural"]          * nrm["natural"]
-        + W.get("streetview_deficit", 0.0) * nrm["streetview_deficit"]
+        W["popdens"]                          * nrm["popdens"]
+        + W["lst"]                            * nrm["lst"]
+        + W["vuln"]                           * nrm["vuln"]
+        + W["shade"]                          * nrm["shade"]
+        + W["natural"]                        * nrm["natural"]
+        + W.get("streetview_deficit", 0.0)    * nrm["streetview_deficit"]
+        + W.get("intersection_density", 0.0)  * nrm["intersection_density"]
     ).values
     return out
 
@@ -98,23 +117,27 @@ def rescore_from_features(scored: gpd.GeoDataFrame,
 
     scenarios 여러 번 돌릴 때 데이터 재로딩 비용 절약.
     """
-    sv_col = scored["sv_deficit"] if "sv_deficit" in scored.columns \
-        else pd.Series(np.zeros(len(scored)), index=scored.index)
+    def _col(name, default=0.0):
+        return (scored[name] if name in scored.columns
+                else pd.Series(np.full(len(scored), default),
+                                index=scored.index))
     nrm = pd.DataFrame({
-        "popdens":            _minmax(scored["pop"]),
-        "lst":                _minmax(scored["lst_c"]),
-        "vuln":               _minmax(scored["vuln_ratio"]),
-        "shade":              _minmax(scored["shade_cov"]),
-        "natural":            _minmax(scored["natural"]),
-        "streetview_deficit": _minmax(sv_col),
+        "popdens":              _minmax(scored["pop"]),
+        "lst":                  _minmax(scored["lst_c"]),
+        "vuln":                 _minmax(scored["vuln_ratio"]),
+        "shade":                _minmax(scored["shade_cov"]),
+        "natural":              _minmax(scored["natural"]),
+        "streetview_deficit":   _minmax(_col("sv_deficit")),
+        "intersection_density": _minmax(_col("inter_density")),
     })
     out = scored.copy()
     out["score"] = (
-        weights["popdens"]            * nrm["popdens"]
-        + weights["lst"]              * nrm["lst"]
-        + weights["vuln"]             * nrm["vuln"]
-        + weights["shade"]            * nrm["shade"]
-        + weights["natural"]          * nrm["natural"]
-        + weights.get("streetview_deficit", 0.0) * nrm["streetview_deficit"]
+        weights["popdens"]                          * nrm["popdens"]
+        + weights["lst"]                            * nrm["lst"]
+        + weights["vuln"]                           * nrm["vuln"]
+        + weights["shade"]                          * nrm["shade"]
+        + weights["natural"]                        * nrm["natural"]
+        + weights.get("streetview_deficit", 0.0)    * nrm["streetview_deficit"]
+        + weights.get("intersection_density", 0.0)  * nrm["intersection_density"]
     ).values
     return out

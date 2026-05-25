@@ -34,38 +34,51 @@ CRS_KOREA = "EPSG:5179"   # 격자 분석은 미터 단위로
 # 격자 한 변 길이 (m)
 GRID_SIZE_M = 100
 
-# 스코어 가중치 (합 = 1.0 권장, 음수 항목은 페널티)
-# streetview_deficit: 거리뷰 segmentation으로 산출한 그늘 결핍 지수 (CV-B)
+# 스코어 가중치 (합 ≈ 0.8, 음수 항목은 페널티)
+# - natural: CV-A SAM 건물 + 흑석동 DSM 누적 그림자(Deep Umbra 영감) 결합
+# - streetview_deficit: 거리뷰 segmentation 으로 산출 (CV-B)
+# - intersection_density: OSMnx 교차로 밀도 (보행자 결집 지점)
 WEIGHTS = {
-    "popdens":            0.25,    # 유동인구
-    "lst":                0.25,    # 지표면 온도
-    "vuln":               0.20,    # 취약계층 가중치
-    "shade":             -0.15,    # 기존 그늘막 커버리지 (페널티)
-    "natural":           -0.05,    # 건물 자연 그늘 (CV-A)
-    "streetview_deficit": 0.15,    # 거리뷰 그늘 결핍 (CV-B)
+    "popdens":              0.22,   # 유동인구
+    "lst":                  0.22,   # 지표면 온도
+    "vuln":                 0.18,   # 취약계층
+    "shade":               -0.15,   # 기존 그늘막 (페널티)
+    "natural":             -0.05,   # 자연 그늘 (CV-A + DSM)
+    "streetview_deficit":   0.13,   # 거리뷰 그늘 결핍 (CV-B)
+    "intersection_density": 0.10,   # 교차로 밀도 (OSMnx)
 }
 
 # 시나리오 프리셋 (정책 관점별 가중치)
 SCENARIOS = {
     "기본": {
-        "popdens": 0.25, "lst": 0.25, "vuln": 0.20,
-        "shade": -0.15, "natural": -0.05, "streetview_deficit": 0.15,
+        "popdens": 0.22, "lst": 0.22, "vuln": 0.18,
+        "shade": -0.15, "natural": -0.05,
+        "streetview_deficit": 0.13, "intersection_density": 0.10,
     },
     "고령자_중시": {
-        "popdens": 0.15, "lst": 0.20, "vuln": 0.40,
-        "shade": -0.10, "natural": -0.05, "streetview_deficit": 0.15,
+        "popdens": 0.13, "lst": 0.18, "vuln": 0.38,
+        "shade": -0.10, "natural": -0.05,
+        "streetview_deficit": 0.13, "intersection_density": 0.08,
     },
     "폭염_중시": {
-        "popdens": 0.15, "lst": 0.40, "vuln": 0.15,
-        "shade": -0.10, "natural": -0.10, "streetview_deficit": 0.15,
+        "popdens": 0.13, "lst": 0.38, "vuln": 0.13,
+        "shade": -0.10, "natural": -0.10,
+        "streetview_deficit": 0.13, "intersection_density": 0.08,
     },
     "유동인구_중시": {
-        "popdens": 0.40, "lst": 0.15, "vuln": 0.15,
-        "shade": -0.10, "natural": -0.05, "streetview_deficit": 0.20,
+        "popdens": 0.38, "lst": 0.13, "vuln": 0.13,
+        "shade": -0.10, "natural": -0.05,
+        "streetview_deficit": 0.15, "intersection_density": 0.10,
     },
-    "보행환경_중시": {  # CV-B 강조 신규 시나리오
-        "popdens": 0.15, "lst": 0.15, "vuln": 0.15,
-        "shade": -0.10, "natural": -0.05, "streetview_deficit": 0.40,
+    "보행환경_중시": {  # CV-B 강조
+        "popdens": 0.13, "lst": 0.13, "vuln": 0.13,
+        "shade": -0.10, "natural": -0.05,
+        "streetview_deficit": 0.35, "intersection_density": 0.13,
+    },
+    "교차로_중시": {  # NEW: OSMnx 교차로 강조 (보행자 결집)
+        "popdens": 0.18, "lst": 0.15, "vuln": 0.13,
+        "shade": -0.10, "natural": -0.05,
+        "streetview_deficit": 0.13, "intersection_density": 0.30,
     },
 }
 

@@ -20,6 +20,8 @@ SCENARIO_COLORS = {
     "고령자_중시":  "#8e24aa",   # purple
     "폭염_중시":    "#fb8c00",   # orange
     "유동인구_중시":"#1e88e5",   # blue
+    "보행환경_중시":"#43a047",   # green (CV-B)
+    "교차로_중시":  "#00acc1",   # cyan (OSMnx)
 }
 
 

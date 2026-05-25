@@ -39,19 +39,23 @@
 - [x] **Streamlit 대시보드** — 가중치 슬라이더 + 시나리오 프리셋 → TOP 10 실시간 재계산 (`app.py`)
 - [x] **최종 발표자료** — PPTX(12장, 16:9) + reveal.js HTML 두 종 (`presentation/`)
 - [x] **CV-A: V-World 항공사진 + Mobile-SAM** — 동작구 BBOX z15 48타일 → SAM zero-shot → 실측 건물 30동 추출 → `data/raw/buildings.geojson` (자연그늘 시뮬레이션 입력 자동 교체)
-- [x] **CV-B: Mapillary 거리뷰 + SegFormer (CityScapes 19 classes)** — 동작구 1,249장 거리뷰 → 19개 후보 격자 매핑 → `shade_deficit = walkable × (1 − building − vegetation)` 산출 → Score 식 6번째 피처
-- [x] **시나리오 5개로 확장** — `보행환경_중시` 추가 (streetview_deficit 0.40)
+- [x] **CV-B: Mapillary 거리뷰 + SegFormer (CityScapes 19 classes)** — 동작구 1,302장 거리뷰 → 19개 후보 격자 매핑 → `shade_deficit = walkable × (1 − building − vegetation)` 산출 → Score 식 6번째 피처
+- [x] **NGII 흑석동 실측 건물 3,775동 통합** — `data_loader.load_buildings()` 가 SAM 30동(동작구) + NGII 3,775동(흑석동) 자동 union
+- [x] **CV-DSM 흑석동 정밀 그림자 (Deep Umbra 영감)** — DSM−DEM=nDSM + 4시점(10·12·14·16시) ray-cast 누적 그림자 → 흑석동 309격자에 적용
+- [x] **OSMnx 교차로 추출** — 동작구 walkable highway 그래프 → 교차로 노드 GeoJSON → 격자 반경 80m 내 교차로 밀도 (격자 평균 2.02개, max 27) → Score 식 7번째 피처
+- [x] **시나리오 6개로 확장** — `보행환경_중시` + `교차로_중시` 신규
 
-### 실행 결과 (CV-A 실측 건물 + CV-B 거리뷰 통합 후)
+### 실행 결과 (DSM·OSMnx·NGII 통합 후, 7 피처 시스템)
 - 격자 수: **3,672 cells** → 보행로 필터 23 → 기존그늘막 제외 19
-- Score 범위 (기본 시나리오 TOP10): **0.302 ~ 0.620** (6 피처 가중합)
 - 시나리오별 최고 Score:
-   - 기본 **0.620**, 고령자 **0.585**, 폭염 **0.664**, 유동인구 **0.726**, 보행환경 **0.665**
-- 모든 5개 시나리오 공통 추천: **3곳** (사당-이수 2 + 흑석동 1)
-- 시나리오 유니크: 기본 0 / 고령자 0 / 폭염 1 / 유동인구 3 / 보행환경 0
-- TOP10 평균 streetview_deficit: **0.190** (CV-B가 점수에 강하게 반영됨)
-- CV-A 산출 건물: **30동** (이전 더미 19동 → V-World z15 항공사진에서 SAM 자동 추출)
-- CV-B 거리뷰: 동작구 BBOX **1,302장** Mapillary 발견 → 19개 후보 격자 매핑
+   - 기본 **0.551**, 고령자 **0.518**, 폭염 **0.607**, 유동인구 **0.648**,
+   - 보행환경 **0.589**, **교차로 0.462 (NEW)**
+- 모든 6개 시나리오 공통 추천: **2곳** (동작대로 사당-이수 축)
+- 시나리오 유니크: 기본 0 / 고령자 0 / 폭염 1 / 유동인구 3 / 보행환경 0 / 교차로 0
+- TOP10 평균 streetview_deficit: **0.181**
+- 평균 교차로 밀도 (반경 80m): **2.02개** (최대 27개)
+- 흑석동 DSM 누적 그림자: **309격자**에 평균 0.157 적용
+- 건물 입력: SAM 30동 + **NGII 3,775동(흑석동)** 통합
 - 산출물:
   - `output/shade_map.html` — 기본 TOP 10 지도
   - `output/scenarios_map.html` — 4개 시나리오 토글 비교
@@ -80,12 +84,13 @@ project_1/
 │   ├── grid.py                   # 100m 격자 생성 (EPSG:5179)
 │   ├── data_loader.py            # 5종 데이터 로더 + 시간 프로파일
 │   │                              + 보행로·횡단보도 네트워크
-│   │                              + 건물 footprint + 자연그늘 시뮬레이션
-│   │                              + streetview_deficit 로더 (CV-B)
+│   │                              + 건물 footprint (SAM + NGII 흑석동 union)
+│   │                              + 자연그늘 / streetview / intersection
+│   │                              / 흑석동 DSM 누적 그림자 로더
 │   ├── cv_buildings.py           # CV-A: V-World 항공사진 + Mobile-SAM
-│   │                              → buildings.geojson 자동 생성
 │   ├── cv_streetview.py          # CV-B: Mapillary + SegFormer (CityScapes)
-│   │                              → grid_streetview.csv (격자별 deficit)
+│   ├── cv_dsm_heukseok.py        # CV-DSM: 흑석동 DSM-DEM 4시점 ray-cast (Deep Umbra 영감)
+│   ├── osm_intersections.py      # OSMnx 교차로 추출 + 격자 밀도
 │   ├── scoring.py                # STEP 1: compute_scores + rescore_from_features
 │   ├── filtering.py              # STEP 2: 보행로 20m + 기존그늘막 150m 제외
 │   ├── visualization.py          # Folium (레이어 컨트롤, 보행로·그늘막 오버레이)
@@ -125,19 +130,30 @@ project_1/
 
 ---
 
-## 5. AI 알고리즘 (CV 통합 후)
+## 5. AI 알고리즘 (CV-A/B + DSM + OSMnx + NGII 통합)
 
 ```
 CV-A: V-World 항공사진(z15 48타일) + Mobile-SAM zero-shot
-        → buildings.geojson (실측 건물 30동) → 자연그늘 시뮬레이션 정확도 ↑
+        → buildings.geojson (실측 건물 30동, 동작구 전역)
 
-CV-B: Mapillary 거리뷰(동작구 1,249장) + SegFormer (CityScapes 19 classes)
+CV-B: Mapillary 거리뷰(동작구 1,302장) + SegFormer (CityScapes 19 classes)
         → 후보 격자별 shade_deficit = walkable × (1 − building − vegetation)
 
-STEP 1 — 6 피처 필요도 스코어
-  Score = 0.25·pop + 0.25·lst + 0.20·vuln
-        − 0.15·shadeCov − 0.05·natural   (CV-A)
-        + 0.15·streetview_deficit         (CV-B)
+CV-DSM (NEW, Deep Umbra 영감 — 강의자료 13p 추천 논문):
+        흑석동 DSM−DEM=nDSM + 4시점(10·12·14·16시) ray-cast
+        → 격자별 시간 누적 그림자 비율 (흑석동 한정)
+
+OSMnx (NEW): 동작구 walkable highway → 교차로 노드(degree≥3) 추출
+        → 격자 반경 80m 내 교차로 밀도 (보행자 결집)
+
+NGII (NEW): 흑석동 실측 건물 3,775동(층수·HEGT)
+        → CV-A SAM 30동과 union 후 자연그늘 입력으로 사용
+
+STEP 1 — 7 피처 필요도 스코어
+  Score = 0.22·pop + 0.22·lst + 0.18·vuln
+        − 0.15·shadeCov − 0.05·natural (CV-A + DSM 결합)
+        + 0.13·streetview_deficit         (CV-B)
+        + 0.10·intersection_density       (OSMnx, NEW)
         (각 피처 MinMax 정규화 후 가중합)
 
 STEP 2 — 공간 필터링
@@ -145,8 +161,8 @@ STEP 2 — 공간 필터링
   · 기존 그늘막 반경 150m 외
   · 상위 TOP 10
 
-STEP 3 — 시나리오 5종 + LLM 근거
-  · 기본 / 고령자 / 폭염 / 유동인구 / 보행환경(NEW)
+STEP 3 — 시나리오 6종 + LLM 근거
+  · 기본 / 고령자 / 폭염 / 유동인구 / 보행환경 / 교차로(NEW)
   · OPENAI_API_KEY 있으면 gpt-4o-mini, 없으면 룰베이스
 ```
 

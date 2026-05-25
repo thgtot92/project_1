@@ -302,22 +302,23 @@ def build():
     tf.margin_left = Inches(0.3); tf.margin_top = Inches(0.25)
     p = tf.paragraphs[0]; p.alignment = PP_ALIGN.CENTER
     r = p.add_run()
-    r.text = ("Score = 0.25·popdens + 0.25·lst + 0.20·vuln")
-    _set_font(r, size=20, bold=True, color=RGBColor(0xFF, 0xEE, 0x58))
+    r.text = ("Score = 0.22·popdens + 0.22·lst + 0.18·vuln")
+    _set_font(r, size=18, bold=True, color=RGBColor(0xFF, 0xEE, 0x58))
     p2 = tf.add_paragraph(); p2.alignment = PP_ALIGN.CENTER
     r = p2.add_run()
-    r.text = "− 0.15·shade − 0.05·natural + 0.15·streetview_deficit"
-    _set_font(r, size=20, bold=True, color=RGBColor(0xFF, 0xEE, 0x58))
+    r.text = "− 0.15·shade − 0.05·natural + 0.13·streetview_deficit + 0.10·intersection_density"
+    _set_font(r, size=16, bold=True, color=RGBColor(0xFF, 0xEE, 0x58))
 
-    # 가중치 해설
+    # 가중치 해설 (7 피처)
     _add_bullets(s, Inches(0.75), Inches(3.7), Inches(12), Inches(2.3), [
-        "popdens (+0.25) — 시간대 가중 유동인구 (오후 1~3시 1.0 피크)",
-        "lst (+0.25) — 지표면 온도, 오후 피크 가중 평균",
-        "vuln (+0.20) — 고령자·어린이 비율 (취약계층)",
-        "shade (−0.15) — 기존 그늘막 반경 150m 내 커버리지",
-        "natural (−0.05) — CV-A SAM 추출 건물 그림자 시뮬레이션",
-        "streetview_deficit (+0.15) — CV-B SegFormer 거리뷰 그늘 결핍 (NEW)",
-    ], size=15)
+        "popdens (+0.22) — 시간대 가중 유동인구",
+        "lst (+0.22) — 지표면 온도, 오후 피크 가중",
+        "vuln (+0.18) — 고령자·어린이 비율",
+        "shade (−0.15) — 기존 그늘막 커버리지",
+        "natural (−0.05) — CV-A SAM 건물 + NGII 3,775동 + 흑석동 DSM 누적 (Deep Umbra)",
+        "streetview_deficit (+0.13) — CV-B SegFormer 거리뷰 그늘 결핍",
+        "intersection_density (+0.10) — OSMnx walkable highway 교차로 밀도 (NEW)",
+    ], size=13)
 
     _add_text(s, Inches(0.75), Inches(6.0), Inches(12), Inches(0.5),
               "🎚 Streamlit 대시보드에서 슬라이더로 실시간 조정 가능 "
@@ -488,11 +489,12 @@ def build():
 
     rows = [
         ("시나리오", "강조", "최고 Score", "유니크"),
-        ("기본", "균형 (25/25/20)", "0.620", "0곳"),
-        ("고령자 중시", "vuln 0.40", "0.585", "0곳"),
-        ("폭염 중시", "lst 0.40", "0.664", "1곳 독점"),
-        ("유동인구 중시", "pop 0.40", "0.726", "3곳 독점"),
-        ("보행환경 중시 (NEW)", "streetview_deficit 0.40", "0.665", "0곳"),
+        ("기본", "균형 (22/22/18)", "0.551", "0곳"),
+        ("고령자 중시", "vuln 0.38", "0.518", "0곳"),
+        ("폭염 중시", "lst 0.38", "0.607", "1곳 독점"),
+        ("유동인구 중시", "pop 0.38", "0.648", "3곳 독점"),
+        ("보행환경 중시", "streetview_deficit 0.35", "0.589", "0곳"),
+        ("교차로 중시 (NEW)", "intersection_density 0.30", "0.462", "0곳"),
     ]
     left = Inches(0.75); top = Inches(1.9)
     tbl = s.shapes.add_table(rows=len(rows), cols=4,
@@ -530,16 +532,15 @@ def build():
     _add_header_bar(s, "강건 입지 · Robust Location",
                     "5개 시나리오 공통 추천 = 어떤 정책 관점에서도 필수")
 
-    # 3 카드
+    # 2 카드 (교차로 시나리오 추가로 흑석동 탈락)
     robust = [
         ("37.4907, 126.9647", "동작대로", "사당-이수 축", COLOR_ACCENT),
         ("37.4898, 126.9670", "동작대로", "사당역 인근", COLOR_ACCENT),
-        ("37.5068, 126.9567", "흑석동", "한강변 주거밀집", COLOR_VULN),
     ]
-    left = Inches(0.75); top = Inches(2.0)
-    w = Inches(3.95); h = Inches(3.2); gap = Inches(0.15)
+    left = Inches(2.5); top = Inches(2.0)
+    w = Inches(4.0); h = Inches(3.2); gap = Inches(0.4)
     for i, (coord, road, area, color) in enumerate(robust):
-        x = left + Inches(i * (3.95 + 0.15))
+        x = left + Inches(i * (4.0 + 0.4))
         box = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, x, top, w, h)
         box.fill.solid()
         box.fill.fore_color.rgb = RGBColor(0xFA, 0xFA, 0xFA)
@@ -564,11 +565,11 @@ def build():
         p4.space_before = Pt(12)
 
     _add_text(s, Inches(0.75), Inches(5.5), Inches(12), Inches(0.5),
-              "정책적 함의: 예산 제약 시 이 3곳이 최우선 설치 대상",
+              "정책적 함의: 예산 제약 시 이 2곳이 최우선 설치 대상",
               size=16, bold=True, color=COLOR_PRIMARY,
               align=PP_ALIGN.CENTER)
     _add_text(s, Inches(0.75), Inches(6.1), Inches(12), Inches(0.5),
-              "CV-B 보행환경 시나리오까지 통과 → 환승 축 2곳 + 흑석동 주거 1곳",
+              "6 시나리오(+ 교차로_중시) 모두 통과 → 검증 차원 한 단계 더 엄격",
               size=13, color=COLOR_SUB, align=PP_ALIGN.CENTER)
     _add_footer(s, 11, TOTAL)
 
@@ -678,12 +679,12 @@ def build():
     _set_font(r, size=18, bold=True, color=RGBColor(0xFF, 0xEE, 0x58))
     p1b = tf.add_paragraph(); p1b.alignment = PP_ALIGN.CENTER
     r = p1b.add_run()
-    r.text = "5가지 정책 관점 모두에서 살아남는 강건 입지 3곳을 찾아냈다."
+    r.text = "6가지 정책 관점 모두에서 살아남는 강건 입지 2곳을 찾아냈다."
     _set_font(r, size=18, bold=True, color=RGBColor(0xFF, 0xEE, 0x58))
     p2 = tf.add_paragraph(); p2.alignment = PP_ALIGN.CENTER
     r = p2.add_run()
-    r.text = "— SAM(항공) + SegFormer(거리뷰) + MCDA 가중합 + 시나리오 민감도"
-    _set_font(r, size=12, color=RGBColor(0xCC, 0xCC, 0xCC))
+    r.text = "— SAM(항공) + SegFormer(거리뷰) + Deep Umbra(DSM) + OSMnx(교차로) + MCDA"
+    _set_font(r, size=11, color=RGBColor(0xCC, 0xCC, 0xCC))
     p2.space_before = Pt(8)
     _add_footer(s, 14, TOTAL)
 

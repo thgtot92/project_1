@@ -241,17 +241,59 @@ def load_existing_shades() -> gpd.GeoDataFrame:
     return gpd.GeoDataFrame(df, geometry=geom, crs=CRS_WGS84)
 
 
+def _load_ngii_heukseok_buildings() -> gpd.GeoDataFrame | None:
+    """NGII 흑석동 실측 건물 shp (3,775동, 높이 HEGT). 없으면 None."""
+    fp = DATA_RAW / "heukseok" / "ngii_data" / "흑석동_건물5186.shp"
+    if not fp.exists():
+        return None
+    gdf = gpd.read_file(fp)
+    # HEGT(m) 우선, 결측 시 NMLY*3.2(층당 3.2m) fallback
+    h = gdf["HEGT"].fillna(gdf["NMLY"].astype(float) * 3.2).clip(lower=3.2)
+    out = gpd.GeoDataFrame(
+        {"height_m": h.astype(float), "source": "ngii_heukseok"},
+        geometry=gdf.geometry,
+        crs=gdf.crs,
+    ).to_crs(CRS_WGS84)
+    return out
+
+
 def load_buildings() -> gpd.GeoDataFrame:
     """건물 footprint + 높이. 자연 그늘 시뮬레이션용.
 
-    실데이터: data/raw/buildings.geojson (Polygon, attr: height_m)
-    더미: 동작구 주요 건물군을 원형 footprint로 근사.
+    우선순위:
+      1) NGII 흑석동 실측 shp (data/raw/heukseok/) — 흑석동 내부 3,775동
+      2) CV-A SAM 추출 (data/raw/buildings.geojson) — 동작구 전역
+      3) 더미 _BUILDINGS — 둘 다 없을 때
+    NGII가 있으면 SAM의 흑석동 내부 건물은 NGII로 대체 후 union.
     """
-    fp = DATA_RAW / "buildings.geojson"
-    if fp.exists():
-        return gpd.read_file(fp).to_crs(CRS_WGS84)
+    sam_path = DATA_RAW / "buildings.geojson"
+    ngii = _load_ngii_heukseok_buildings()
 
-    # 더미: 미터 단위 buffer 를 위해 일단 WGS84 점 → EPSG:5179 변환 → buffer → WGS84 복귀
+    sam = None
+    if sam_path.exists():
+        sam = gpd.read_file(sam_path).to_crs(CRS_WGS84)
+        if "height_m" not in sam.columns:
+            sam["height_m"] = 20.0
+        sam["source"] = "sam_cv_a"
+
+    if ngii is not None and sam is not None:
+        # 흑석동 NGII 영역 안에 들어가는 SAM 건물 제외 (중복)
+        ngii_union = ngii.geometry.union_all()
+        sam_outside = sam[~sam.geometry.intersects(ngii_union)]
+        merged = gpd.GeoDataFrame(
+            pd.concat([ngii[["height_m", "source", "geometry"]],
+                       sam_outside[["height_m", "source", "geometry"]]],
+                      ignore_index=True),
+            crs=CRS_WGS84,
+        )
+        return merged
+
+    if ngii is not None:
+        return ngii
+    if sam is not None:
+        return sam
+
+    # 더미 (마지막 fallback)
     pts_wgs = gpd.GeoSeries(
         [Point(lon, lat) for lon, lat, _r, _h in _BUILDINGS],
         crs=CRS_WGS84,
@@ -260,7 +302,8 @@ def load_buildings() -> gpd.GeoDataFrame:
     polys_m = [pt.buffer(r) for pt, (_, _, r, _) in zip(pts_m, _BUILDINGS)]
     polys_wgs = gpd.GeoSeries(polys_m, crs=CRS_KOREA).to_crs(CRS_WGS84)
     return gpd.GeoDataFrame(
-        {"height_m": [h for _l, _t, _r, h in _BUILDINGS]},
+        {"height_m": [h for _l, _t, _r, h in _BUILDINGS],
+         "source": ["dummy"] * len(_BUILDINGS)},
         geometry=list(polys_wgs.values),
         crs=CRS_WGS84,
     )
@@ -299,6 +342,58 @@ def load_natural_shade(grid: gpd.GeoDataFrame) -> pd.Series:
     inter = grid_m.geometry.intersection(shadow_union).area
     cover = (inter / grid_m.geometry.area).clip(0, 1)
     return pd.Series(cover.values, name="natural")
+
+
+def load_intersection_density(sample_points: pd.DataFrame,
+                                radius_m: float = 80.0) -> pd.Series:
+    """OSMnx 추출 교차로 기준 격자별 밀도. 캐시 없으면 자동 생성.
+
+    cv 모듈 import 비용을 줄이기 위해 함수 내부 import.
+    """
+    cache = DATA_PROCESSED / "grid_intersection.csv"
+    # 캐시 hit
+    if cache.exists():
+        cached = pd.read_csv(cache)
+        if len(cached) == len(sample_points):
+            return pd.Series(cached["intersection_density"].values,
+                              name="intersection_density")
+
+    # 캐시 miss → grid GeoDataFrame 으로 재계산 필요
+    # sample_points 는 lon/lat 만 있는 DataFrame 이라 격자 polygon 이 없음
+    # → 격자를 재생성해서 캐시 생성
+    try:
+        from . import osm_intersections
+        from .grid import build_grid
+        grid = build_grid()
+        sv = osm_intersections.compute_intersection_density(grid,
+                                                              radius_m=radius_m)
+        return sv
+    except Exception as e:
+        print(f"  [warn] OSMnx 교차로 산출 실패 → 0: {e}")
+        return pd.Series(np.zeros(len(sample_points)),
+                          name="intersection_density")
+
+
+def load_heukseok_dsm_shadow(grid: gpd.GeoDataFrame) -> pd.Series:
+    """흑석동 DSM 기반 누적 그림자 [0,1]. 격자 단위, 흑석동 밖은 NaN.
+
+    캐시 없으면 자동 계산.
+    """
+    cache_csv = DATA_PROCESSED / "grid_heukseok_natural.csv"
+
+    if cache_csv.exists():
+        cached = pd.read_csv(cache_csv)
+        if len(cached) == len(grid):
+            return pd.Series(cached["heukseok_shadow_accum"].values,
+                              name="heukseok_shadow_accum")
+
+    try:
+        from . import cv_dsm_heukseok
+        return cv_dsm_heukseok.run(grid)
+    except Exception as e:
+        print(f"  [warn] 흑석동 DSM 그림자 산출 실패 → NaN: {e}")
+        return pd.Series(np.full(len(grid), np.nan),
+                          name="heukseok_shadow_accum")
 
 
 def load_streetview_deficit(sample_points: pd.DataFrame) -> pd.Series:

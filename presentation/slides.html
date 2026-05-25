@@ -237,17 +237,18 @@
     <h2>알고리즘 · Score 식</h2>
     <h3>MinMax 정규화 후 가중합 (음수 가중치 = 페널티)</h3>
   </div>
-  <div class="score-box" style="font-size:1.05em;">
-    Score = 0.25·popdens + 0.25·lst + 0.20·vuln<br>
-    − 0.15·shade − 0.05·natural + 0.15·streetview_deficit
+  <div class="score-box" style="font-size:0.92em;">
+    Score = 0.22·popdens + 0.22·lst + 0.18·vuln<br>
+    − 0.15·shade − 0.05·natural + 0.13·streetview_deficit + 0.10·intersection_density
   </div>
-  <ul style="font-size:0.82em;">
-    <li><b style="color:var(--c-primary)">popdens (+0.25)</b> — 시간대 가중 유동인구</li>
-    <li><b style="color:var(--c-warn)">lst (+0.25)</b> — 지표면 온도, 오후 피크 가중</li>
-    <li><b style="color:var(--c-vuln)">vuln (+0.20)</b> — 고령자·어린이 비율</li>
-    <li><b style="color:var(--c-sub)">shade (−0.15)</b> — 기존 그늘막 커버리지 (감점)</li>
-    <li><b style="color:var(--c-sub)">natural (−0.05)</b> — <b>CV-A</b> SAM 추출 건물 그림자</li>
-    <li><b style="color:var(--c-accent)">streetview_deficit (+0.15)</b> — <b>CV-B</b> SegFormer 거리뷰 분석 <span class="highlight">NEW</span></li>
+  <ul style="font-size:0.78em;">
+    <li><b style="color:var(--c-primary)">popdens (+0.22)</b> — 시간대 가중 유동인구</li>
+    <li><b style="color:var(--c-warn)">lst (+0.22)</b> — 지표면 온도, 오후 피크 가중</li>
+    <li><b style="color:var(--c-vuln)">vuln (+0.18)</b> — 고령자·어린이 비율</li>
+    <li><b style="color:var(--c-sub)">shade (−0.15)</b> — 기존 그늘막 커버리지</li>
+    <li><b style="color:var(--c-sub)">natural (−0.05)</b> — <b>CV-A</b> SAM + <b>NGII 3,775동</b> + <b>흑석동 DSM 누적</b> (Deep Umbra)</li>
+    <li><b style="color:var(--c-accent)">streetview_deficit (+0.13)</b> — <b>CV-B</b> SegFormer 거리뷰</li>
+    <li><b style="color:#00838f">intersection_density (+0.10)</b> — <b>OSMnx</b> walkable highway 교차로 밀도 <span class="highlight">NEW</span></li>
   </ul>
   <p style="color:var(--c-primary); font-weight:bold; font-size:0.85em;">
     🎚 Streamlit 대시보드에서 슬라이더로 실시간 조정 가능 · 시나리오별 프리셋 4종 내장
@@ -369,14 +370,15 @@
   </div>
   <div class="two-col">
     <div>
-      <table style="font-size:0.65em;">
+      <table style="font-size:0.60em;">
         <thead><tr><th>시나리오</th><th>강조</th><th>최고</th><th>유니크</th></tr></thead>
         <tbody>
-          <tr><td>기본</td><td>균형(25/25/20)</td><td>0.620</td><td>0곳</td></tr>
-          <tr><td>고령자</td><td>vuln 0.40</td><td>0.585</td><td>0곳</td></tr>
-          <tr><td><b>폭염</b></td><td>lst 0.40</td><td><b>0.664</b></td><td><b>1곳</b></td></tr>
-          <tr><td><b>유동인구</b></td><td>pop 0.40</td><td><b>0.726</b></td><td><b>3곳</b></td></tr>
-          <tr><td><b>보행환경 NEW</b></td><td>sv 0.40</td><td><b>0.665</b></td><td>0곳</td></tr>
+          <tr><td>기본</td><td>균형(22/22/18)</td><td>0.551</td><td>0곳</td></tr>
+          <tr><td>고령자</td><td>vuln 0.38</td><td>0.518</td><td>0곳</td></tr>
+          <tr><td><b>폭염</b></td><td>lst 0.38</td><td><b>0.607</b></td><td><b>1곳</b></td></tr>
+          <tr><td><b>유동인구</b></td><td>pop 0.38</td><td><b>0.648</b></td><td><b>3곳</b></td></tr>
+          <tr><td>보행환경</td><td>sv 0.35</td><td>0.589</td><td>0곳</td></tr>
+          <tr><td><b>교차로 NEW</b></td><td>inter 0.30</td><td>0.462</td><td>0곳</td></tr>
         </tbody>
       </table>
       <p style="color:var(--c-accent); font-weight:bold; font-size:0.8em;">
@@ -392,13 +394,13 @@
   <div class="footer"><span>동작구 그늘막 · 한영재</span><span>10 / 14</span></div>
 </section>
 
-<!-- 11. 강건 입지 3곳 -->
+<!-- 11. 강건 입지 2곳 -->
 <section>
   <div class="title-bar">
     <h2>강건 입지 · Robust Location</h2>
-    <h3>5개 시나리오 공통 추천 = 어떤 정책 관점에서도 필수</h3>
+    <h3>6개 시나리오 공통 추천 = 어떤 정책 관점에서도 필수</h3>
   </div>
-  <div class="robust-grid">
+  <div class="robust-grid" style="grid-template-columns:repeat(2,1fr); max-width:75%; margin:1em auto;">
     <div class="robust-card r3">
       <div class="hash">#1</div>
       <div class="road">동작대로</div>
@@ -411,18 +413,12 @@
       <div class="area">사당역 인근</div>
       <div class="coord">37.4898, 126.9670</div>
     </div>
-    <div class="robust-card r1">
-      <div class="hash">#3</div>
-      <div class="road">흑석동</div>
-      <div class="area">한강변 주거밀집</div>
-      <div class="coord">37.5068, 126.9567</div>
-    </div>
   </div>
   <p style="color:var(--c-primary); font-weight:bold; text-align:center; font-size:1.1em;">
-    정책적 함의 — 예산 제약 시 이 3곳이 최우선 설치 대상
+    정책적 함의 — 예산 제약 시 이 2곳이 최우선 설치 대상
   </p>
   <p style="color:var(--c-sub); text-align:center; font-size:0.85em;">
-    CV-B 보행환경 시나리오까지 통과 → 환승 축 2곳 + 흑석동 주거 1곳
+    6 시나리오(+ 교차로_중시) 모두 통과 → 검증 차원 한 단계 더 엄격
   </p>
   <div class="footer"><span>동작구 그늘막 · 한영재</span><span>11 / 14</span></div>
 </section>
@@ -515,9 +511,9 @@
     </div>
   </div>
   <div class="callout dark">
-    항공사진과 거리뷰까지 컴퓨터 비전으로 읽어내,<br>
-    5가지 정책 관점 모두에서 살아남는 그늘막 강건 입지 <span style="color:#FFEE58">3곳</span>을 찾아냈다.
-    <div class="sub">— SAM(항공) + SegFormer(거리뷰) + MCDA 가중합 + 시나리오 민감도</div>
+    항공사진·거리뷰·DSM·도로망까지 4종 데이터를 컴퓨터 비전·GIS로 통합해,<br>
+    6가지 정책 관점 모두에서 살아남는 그늘막 강건 입지 <span style="color:#FFEE58">2곳</span>을 찾아냈다.
+    <div class="sub">— SAM(항공) + SegFormer(거리뷰) + Deep Umbra(DSM) + OSMnx(교차로) + MCDA</div>
   </div>
   <div class="footer"><span>동작구 그늘막 · 한영재</span><span>14 / 14</span></div>
 </section>

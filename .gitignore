@@ -60,6 +60,21 @@ data/processed/streetview_images/
 output/cv_buildings_overlay.png
 output/cv_streetview_overlay.png
 
+# ── 강의자료 (교수 저작권) ──
+강의자료_*.pdf
+output/lecture_p*.png
+
+# ── NGII 원본 래스터 (대용량 + 라이선스) ──
+data/raw/heukseok/basic_dsm_ortho/*.tif
+data/raw/heukseok/basic_dsm_ortho/*.tfw
+data/raw/heukseok/ngii_dem/*.tif
+data/raw/heukseok/ngii_dem/*.tfw
+# 원본 zip 도 제외 (이미 풀어둠)
+data/*.zip
+
+# ── OSMnx 자동 캐시 ──
+cache/
+
 # ── ML 모델 가중치 (자동 다운로드) ──────
 mobile_sam.pt
 *.pt
