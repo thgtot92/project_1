@@ -43,6 +43,8 @@ data/processed/*
 !data/processed/.gitkeep
 # CV-A 산출물 (우리 결과물, 재현용으로 포함)
 !data/raw/buildings.geojson
+# 사용자 제공 흑석동 실측 그늘막 (공공 데이터, 가공)
+!data/raw/existing_shades.csv
 # CV-B 산출물 (격자별 deficit, 재현용으로 포함)
 !data/processed/grid_streetview.csv
 !data/processed/streetview_features.json
