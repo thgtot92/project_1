@@ -66,11 +66,9 @@ output/cv_streetview_overlay.png
 강의자료_*.pdf
 output/lecture_p*.png
 
-# ── NGII 원본 래스터 (대용량 + 라이선스) ──
-data/raw/heukseok/basic_dsm_ortho/*.tif
-data/raw/heukseok/basic_dsm_ortho/*.tfw
-data/raw/heukseok/ngii_dem/*.tif
-data/raw/heukseok/ngii_dem/*.tfw
+# ── NGII 흑석동 데이터 영구 제외 (사용자 결정: GitHub 비공개 유지) ──
+# 로컬에는 zip 으로부터 풀어 사용, GitHub repo 에는 절대 올리지 않음
+data/raw/heukseok/
 # 원본 zip 도 제외 (이미 풀어둠)
 data/*.zip
 
