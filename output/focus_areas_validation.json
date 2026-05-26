@@ -13,14 +13,14 @@
         "rank": 6,
         "lat": 37.5131,
         "lon": 126.94421,
-        "score": 0.333,
+        "score": 0.331,
         "distance_m": 291.0
       },
       {
-        "rank": 9,
+        "rank": 8,
         "lat": 37.51129,
         "lon": 126.94196,
-        "score": 0.298,
+        "score": 0.295,
         "distance_m": 159.0
       }
     ]
@@ -39,28 +39,28 @@
         "rank": 1,
         "lat": 37.48976,
         "lon": 126.96362,
-        "score": 0.469,
+        "score": 0.466,
         "distance_m": 253.0
       },
       {
         "rank": 2,
         "lat": 37.48975,
         "lon": 126.96248,
-        "score": 0.437,
+        "score": 0.433,
         "distance_m": 340.0
       },
       {
         "rank": 4,
         "lat": 37.49068,
         "lon": 126.96813,
-        "score": 0.364,
+        "score": 0.359,
         "distance_m": 307.0
       },
       {
         "rank": 5,
         "lat": 37.48617,
         "lon": 126.96703,
-        "score": 0.335,
+        "score": 0.333,
         "distance_m": 275.0
       }
     ]

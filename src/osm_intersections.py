@@ -107,7 +107,10 @@ def fetch_osm_walkable_edges(force: bool = False) -> gpd.GeoDataFrame:
 
 
 def fetch_osm_crossings(force: bool = False) -> gpd.GeoDataFrame:
-    """OSMnx 횡단보도 노드 — highway=crossing OR footway=crossing.
+    """OSMnx 횡단보도 — 한국 OSM 매핑 관행 반영해 다중 태그 통합 검색.
+
+    한국 OSM 에서 횡단보도는 highway=crossing 보다 footway=crossing /
+    highway=footway 패턴이 흔함. 모두 함께 가져와 중복 제거.
 
     캐시: data/processed/osm_crossings.geojson
     """
@@ -119,41 +122,60 @@ def fetch_osm_crossings(force: bool = False) -> gpd.GeoDataFrame:
     bbox = DONGJAK_BBOX
     bbox_tuple = (bbox["min_lon"], bbox["min_lat"],
                    bbox["max_lon"], bbox["max_lat"])
-    print(f"  [OSMnx] 동작구 BBOX 횡단보도(highway=crossing) 다운로드 중...")
+    print(f"  [OSMnx] 동작구 BBOX 횡단보도 다중 태그 검색 중...")
 
-    # OSMnx 2.x: features_from_bbox
-    try:
-        gdf = ox.features_from_bbox(bbox=bbox_tuple,
-                                      tags={"highway": "crossing"})
-    except TypeError:
-        gdf = ox.features_from_bbox(north=bbox["max_lat"], south=bbox["min_lat"],
-                                      east=bbox["max_lon"], west=bbox["min_lon"],
-                                      tags={"highway": "crossing"})
+    tag_sets = [
+        {"highway": "crossing"},
+        {"footway": "crossing"},
+        {"crossing": True},
+    ]
+    all_gdfs = []
+    for tags in tag_sets:
+        try:
+            try:
+                g = ox.features_from_bbox(bbox=bbox_tuple, tags=tags)
+            except TypeError:
+                g = ox.features_from_bbox(
+                    north=bbox["max_lat"], south=bbox["min_lat"],
+                    east=bbox["max_lon"], west=bbox["min_lon"], tags=tags
+                )
+            if g is not None and not g.empty:
+                all_gdfs.append(g.to_crs(CRS_WGS84))
+                print(f"    {tags}: {len(g)}개")
+        except Exception as e:
+            print(f"    {tags}: 실패 ({type(e).__name__})")
 
-    if gdf is None or gdf.empty:
+    if not all_gdfs:
         print("  [OSMnx] 횡단보도 0개")
-        gdf_empty = gpd.GeoDataFrame(geometry=[], crs=CRS_WGS84)
+        empty = gpd.GeoDataFrame(geometry=[], crs=CRS_WGS84)
         DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
-        gdf_empty.to_file(out_path, driver="GeoJSON")
-        return gdf_empty
+        empty.to_file(out_path, driver="GeoJSON")
+        return empty
 
-    gdf = gdf.to_crs(CRS_WGS84)
-    # Point 만 추출 (Way 형태의 crossing 라인은 중심점으로 환산)
-    crossings = gdf[gdf.geometry.geom_type.isin(["Point", "LineString"])].copy()
-    crossings["geometry"] = crossings.geometry.apply(
+    merged = gpd.GeoDataFrame(
+        pd.concat(all_gdfs, ignore_index=True),
+        crs=CRS_WGS84,
+    )
+    # LineString·Polygon 은 중심점으로 환산
+    merged["geometry"] = merged.geometry.apply(
         lambda g: g.centroid if g.geom_type != "Point" else g
     )
+    merged = merged[merged.geometry.geom_type == "Point"]
+    # 좌표 6자리로 반올림 후 중복 제거
+    merged["_k"] = merged.geometry.apply(lambda p: (round(p.x, 6), round(p.y, 6)))
+    merged = merged.drop_duplicates("_k").drop(columns=["_k"]).reset_index(drop=True)
+
     keep = ["geometry"]
-    for c in ("highway", "crossing", "crossing_ref"):
-        if c in crossings.columns:
-            crossings[c] = crossings[c].astype(str)
+    for c in ("highway", "footway", "crossing"):
+        if c in merged.columns:
+            merged[c] = merged[c].astype(str)
             keep.append(c)
-    crossings = crossings[keep].reset_index(drop=True)
+    out = merged[keep].reset_index(drop=True)
 
     DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
-    crossings.to_file(out_path, driver="GeoJSON")
-    print(f"  [OSMnx] {len(crossings)} 횡단보도 → {out_path}")
-    return crossings
+    out.to_file(out_path, driver="GeoJSON")
+    print(f"  [OSMnx] {len(out)} 횡단보도(중복 제거 후) → {out_path}")
+    return out
 
 
 def fetch_pedestrian_focus_points(force: bool = False) -> gpd.GeoDataFrame:
