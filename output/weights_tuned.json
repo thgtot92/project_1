@@ -1,0 +1,31 @@
+{
+  "n_calls": 60,
+  "best_loss": -0.12184243725879927,
+  "n_target_grids": 18,
+  "weights_manual": {
+    "popdens": 0.18,
+    "lst": 0.18,
+    "vuln": 0.18,
+    "shade": -0.15,
+    "natural": -0.05,
+    "streetview_deficit": 0.12,
+    "intersection_density": 0.2
+  },
+  "weights_tuned": {
+    "popdens": 0.26,
+    "lst": 0.318,
+    "vuln": 0.061,
+    "shade": -0.295,
+    "natural": -0.178,
+    "streetview_deficit": 0.0,
+    "intersection_density": 0.255
+  },
+  "verification": {
+    "manual_target_mean_score": 0.0873,
+    "tuned_target_mean_score": -0.1218,
+    "delta_at_target": -0.2091,
+    "manual_overall_mean": 0.0827,
+    "tuned_overall_mean": 0.0759,
+    "interpretation": "tuned_target_mean_score < manual_target_mean_score 이면 학습된 가중치가 실측 위치를 '덜 추천'하도록 조정됨 — 사용자 가설(이미 설치된 곳은 score 낮춰야)에 부합."
+  }
+}
