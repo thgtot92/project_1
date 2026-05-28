@@ -38,6 +38,201 @@ ROOT = Path(__file__).resolve().parent.parent
 MAIN = ROOT / "presentation" / "데이터 도시기반 설계 과제 발표.pptx"
 OUT = ROOT / "presentation" / "데이터기반_도시설계_기말_통합발표.pptx"
 
+
+# 슬라이드별 스피커 노트 (PPTX notes_slide 에 자동 삽입)
+# 메인 1~15 (PPTX 2~16) 는 친구 작품이라 손대지 않음
+SLIDE_NOTES = {
+    # 1: 새 표지
+    1: """[1p · 표지 · 60초]
+- 안녕하세요. 인공지능융합대학원 한영재입니다.
+- 본 프로젝트는 3인 팀 작업입니다:
+  · 문치국 — GIS·측량·BIM 엔지니어 (NGII·DSM 자문)
+  · 한영재 — 한화투자증권 채권트레이더 (그늘막 분석 전체)
+  · 원우식 — SOCAR ML/AI Engineer (SAM3·DSM→DEM 파이프라인)
+- 메인은 두 부분으로 구성됩니다:
+  1) 2~16p: 친구들이 만든 DSM → DEM Converter (15장)
+  2) 17p~: 같은 DSM 자산을 재활용한 그늘막 입지 분석 (10장)
+- 학제간 협업의 결과물입니다.
+""",
+    # 17: 왜 DSM 기반인가
+    17: """[17p · 왜 DSM 기반인가 · 60초]
+핵심 메시지: 친구들 작품 (DSM→DEM Converter) 의 DSM 자산을 우리가 재활용
+
+DEM vs DSM (가장 자주 받는 질문):
+- DEM: 객체 제거된 순수 지표 → 침수 분석·토목 설계
+- DSM: 건물·수목 포함 표면 → 그림자·일조 분석
+- 그림자를 만드는 건 표면 객체의 꼭대기. DEM 으론 그림자가 안 생김
+- nDSM = DSM − DEM = 객체 순높이 = ray-cast 입력
+
+연계 흐름:
+- 친구 도구: 정사영상 → SAM3 객체 추출 → DSM 에서 제거 → GDAL 보간 → DEM
+- 우리 도구: DSM 원본을 그대로 받아 → ray-cast 그림자 시뮬레이션 → 입지 추천
+
+교수님 13p 추천: Deep Umbra (GAN 일조 컴퓨테이션)
+- 풀 GAN 학습 부담 → DSM + 4시점 ray-cast 로 단순 이식
+- 핵심 정신(다시점 시간 누적) 은 유지
+""",
+    # 18: 보완 흐름
+    18: """[18p · 보완 흐름 · 45초]
+v1 (초기) → v2 (최종) 비교 9 항목:
+- 건물 입력: 더미 19동 → 실측 30+3,775동 (SAM + NGII)
+- 그림자: 단일 시점 → 4시점 ray-cast (Deep Umbra 영감)
+- 안정성: 결정론적 1회 → Self-consistency 5회 평균 (NEW)
+- 보행로: 더미 14라인 buffer 20m → OSMnx walkable 5m
+- 건물 cut: 없음 → NGII 5m inset (건물 위 추천 방지)
+- 결집지: 없음 → 교차로+횡단보도 50m 근접 (OSMnx)
+- 가중치: 수동 → Bayesian Opt 자동 튜닝 (NEW, 실측 18개 라벨)
+- 정책: TOP10 정렬 → 배낭 최적화 (예산+분산 제약)
+
+전체 메시지: 데이터 품질 + 시뮬레이션 정확도 + 정책 의사결정 3개 차원 동시 강화
+""",
+    # 19: 데이터 9종 + Score 7 피처
+    19: """[19p · 데이터 9종 + Score · 45초]
+3 계층:
+- 기본 5종 (현재 4종 더미, 실데이터 자동 전환 구조)
+- CV 2종 (V-World 항공 + Mapillary 거리뷰)
+- 외부 정밀 2종 (NGII 흑석동 + OSMnx 도로망)
+
+Score 식:
+0.18·pop + 0.18·lst + 0.18·vuln − 0.15·shade − 0.05·natural
++ 0.12·sv_deficit + 0.20·intersection
+→ 가중치는 다음 다음 슬라이드(23p) 에서 BayesOpt 로 자동 튜닝됨
+
+격자 3,672 → 4단계 필터 → 330 → 시나리오 6 × TOP10 → 강건 입지
+""",
+    # 20: 공간 필터링 + CV
+    20: """[20p · 공간 필터링 + CV · 45초]
+4단계 필터 (3,672 → 330, 9% 살아남음):
+- 보행로 5m: OSMnx walkable edges
+- 건물 컷: NGII 폴리곤 5m inset (건물 위 추천 차단)
+- 결집지 50m: 교차로 + 횡단보도 근접
+
+CV-A · Mobile-SAM (Meta 2023):
+- V-World 항공 z=15, 48 타일 합성
+- zero-shot, 40MB CPU 추론, 학습 0건
+- 건물 30동 자동 추출
+
+CV-B · SegFormer-b0 (NVIDIA CityScapes pretrained):
+- Mapillary 거리뷰 1,302장 → 후보 19격자 매핑
+- 19 classes 의미 분할 → 그늘 결핍 공식
+- TOP10 평균 deficit 0.153
+""",
+    # 21: CV-DSM + Self-consistency (NEW)
+    21: """[21p · CV-DSM + Self-consistency · 60초 — NEW]
+강의 13p + 40p 동시 반영:
+
+CV-DSM (Deep Umbra 영감):
+- 흑석동 DSM − DEM = nDSM (객체 높이)
+- 4시점 (10·12·14·16시) shadow union → 누적 비율
+- 309 격자 평균 누적 0.157
+
+Self-consistency 5회 (NEW, 강의 40p 권장):
+- 단일 ray-cast 는 태양위치 가정에 의존 → 신뢰구간 없음
+- ±15분 시각, ±5° 방위 변동 5회 → 평균 + std
+- 평균 std 0.021 (낮음 = 안정적, 결과 신뢰)
+- 흑석동 focus map 에 std 레이어 토글 가능
+
+예상 질문: 왜 풀 GAN 안 썼나? → 학습 시간·데이터 부담. ray-cast 로 같은 메시지
+""",
+    # 22: 흑석동 정밀 분석
+    22: """[22p · 흑석동 정밀 분석 · 60초]
+NGII 실측 3,775동 + 실측 그늘막 18개 (고정 13 + 스마트 5) + TOP10 분류
+
+TOP10 3 카테고리:
+- ⭐사각지대 (>150m): TOP3·4·5·8 (4곳) — 정책 어필 1순위
+- ●보강 (<60m): TOP1·2·7·10 (4곳) — 기존 강화
+- ○중간 (60~150m): TOP6·9 (2곳)
+
+최대 사각지대: TOP4 (37.49786, 126.96129) — 359.6m
+→ 흑석동 신규 설치 시 1순위 우선 후보
+
+정책 메시지: 흑석동은 그늘막 75% 영역 커버 → 다른 동 우선 / 흑석동 내부 추가는 사각지대 4곳
+""",
+    # 23: 가중치 자동 튜닝 (NEW)
+    23: """[23p · 가중치 자동 튜닝 · 75초 — NEW, 강의 40p 추천]
+가설 (사용자 정정 반영):
+- "이미 설치된 곳은 score 가 낮아야" → loss = mean(score(실측 18개 근접)) minimize
+
+Bayesian Optimization (skopt.gp_minimize, n=60):
+- GP surrogate 로 7 피처 가중치 자동 탐색
+- 강의 40p 권장의 "데이터 기반 검증" 정신 반영
+
+학습 결과 (수동 → 학습):
+- shade −0.150 → −0.295  (페널티 2배 강화!)
+- natural −0.050 → −0.178 (3.6배)
+- lst +0.180 → +0.318 (폭염 우선)
+- vuln +0.180 → +0.061 (흑석동 그늘막이 취약지에 집중되어 있어서 약화)
+
+검증: 실측 위치 평균 score 0.087 → −0.122 (Δ −0.21, 가설 부합)
+→ 알고리즘이 데이터로부터 "기존 설치 = 이미 좋은 곳" 을 자동 학습
+""",
+    # 24: OSMnx + 시나리오 + 강건 입지
+    24: """[24p · OSMnx + 시나리오 + 강건 입지 · 60초]
+OSMnx (보행자 결집 지점):
+- walkable highway edges (보행로 5m 필터 입력)
+- 교차로 노드 (street_count ≥ 3)
+- 횡단보도 306 (한국 OSM 은 footway=crossing 우세 → 3종 태그 통합)
+
+시나리오 6: 기본·고령자·폭염·유동인구·보행환경·교차로
+- 가중치만 바꿔 재스코어 = 정책 민감도 분석
+- 유동인구 최고 0.648, 3곳 독점
+
+⭐ 강건 입지 2곳 (6 시나리오 모두 공통):
+- 37.4907, 126.9647 — 동작대로 사당-이수 축
+- 37.4898, 126.9670 — 동작대로 사당역 인근
+→ 예산 제약 시 최우선 설치 대상
+""",
+    # 25: 사각지대 + 예산 최적화
+    25: """[25p · 사각지대 + 예산 최적화 · 45초]
+사각지대 4곳 (흑석동 한정, p22 참고):
+- TOP4 359.6m (최대), TOP3 322.9m, TOP5 234.8m, TOP8 153.8m
+
+예산 4천만원 배낭 최적화 (PuLP CBC, Optimal):
+- 단가 800만원/개 → 최대 5개
+- 200m 공간 분산 제약 (29쌍 active)
+- 선정 5: 이수역·이수북·사당동·사당남·노량진
+- 총 score 1.852, 예산 100% 사용
+
+핵심 차이: TOP10 단순 정렬 vs 배낭 최적화
+- 단순 정렬: 사당-이수에 7곳 몰림
+- 배낭: 200m 분산으로 노량진역도 자동 포함
+""",
+    # 26: 결론 + 다음 단계
+    26: """[26p · 결론 · 45초]
+한 줄 요약:
+"DSM → DEM Converter 자산을 재활용해 그늘막 입지를
+ MCDA + CV + Self-consistency + Bayesian Opt + 배낭 최적화로 도출 →
+ 강건 입지 2 + 흑석동 사각지대 4 + 예산 4천만원 최적 배치 5"
+
+다음 단계:
+- 서울 열린데이터 API 연결 (P0)
+- 동작구 전 동 실측 그늘막
+- CV-D 멀티모달 VLM (강의 40~42p Reason-then-Estimate)
+- 타 자치구 확장 (BBOX·NGII 교체)
+
+감사합니다. 질문 받겠습니다.
+
+예상 질문:
+- 타 자치구 적용? → BBOX·NGII 교체. 가중치는 BayesOpt 로 재튜닝
+- 코드? → github.com/thgtot92/project_1 (MIT)
+""",
+    # 27: 첨부 자료
+    27: """[27p · 첨부 자료 · 30초]
+- output/heukseok_focus.html — 흑석동 인터랙티브 지도 (브라우저)
+- 같은 폴더에 동봉 / 더블클릭으로 열림
+
+지도 레이어 (토글 가능):
+- OSMnx 보행 도로 + 교차로 + 횡단보도
+- NGII 실측 건물 3,775동 (층수별 색)
+- 기존 그늘막 18개 (검정 우산)
+- 수동 가중치 TOP10 (분홍 원)
+- 학습 가중치 TOP10 (파란 별, BayesOpt 결과)
+- 그림자 표준편차 (Self-consistency 5회)
+
+심사위원이 직접 토글하면서 검토 가능
+""",
+}
+
 # 메인 14p Palette (정확 추출)
 C_BG       = RGBColor(0xFF, 0xFF, 0xFF)
 C_TEXT     = RGBColor(0x37, 0x35, 0x2F)   # 본문 다크 그레이
@@ -681,6 +876,59 @@ def build_p25_blindspot_budget(slide):
     _footer(slide, 25)
 
 
+def build_p27_attachment(slide):
+    """[27p] 첨부 자료 — 흑석동 HTML 인터랙티브 지도 안내."""
+    _header(slide, "첨부 자료",
+            "흑석동 인터랙티브 지도 — output/heukseok_focus.html")
+
+    _txt(slide, LEFT, Inches(1.45), CONTENT_WIDTH, Inches(0.4),
+         "본 PPTX 와 함께 동봉된 HTML 파일을 브라우저에서 열면 "
+         "심사위원이 직접 레이어를 토글하며 검토할 수 있습니다.",
+         size=10, color=C_SUB)
+
+    # 좌측: 파일 경로 박스
+    _box(slide, LEFT, Inches(2.0), Inches(4.3), Inches(1.8),
+          fill=C_TEXT, border=None)
+    _txt(slide, Inches(0.85), Inches(2.15), Inches(4), Inches(0.3),
+         "📎 첨부 파일", size=11, bold=True,
+         color=RGBColor(0xFF, 0xEE, 0x58))
+    _txt(slide, Inches(0.85), Inches(2.55), Inches(4), Inches(0.4),
+         "output/heukseok_focus.html",
+         size=12, bold=True,
+         color=RGBColor(0xFF, 0xFF, 0xFF), font=FONT_MONO)
+    _txt(slide, Inches(0.85), Inches(3.05), Inches(4), Inches(0.4),
+         "약 7 MB · 단일 HTML (의존성 없음)",
+         size=9, color=RGBColor(0xCC, 0xCC, 0xCC))
+    _txt(slide, Inches(0.85), Inches(3.35), Inches(4), Inches(0.4),
+         "더블클릭 → 기본 브라우저로 자동 열림",
+         size=9, color=RGBColor(0xCC, 0xCC, 0xCC))
+
+    # 우측: 지도 레이어 목록
+    _box(slide, Inches(5.18), Inches(2.0), Inches(4.15), Inches(2.8),
+          fill=C_PANEL, border=C_ACCENT, border_w=1.25)
+    _txt(slide, Inches(5.33), Inches(2.10), Inches(4), Inches(0.3),
+         "지도 레이어 (토글 가능)", size=11, bold=True, color=C_ACCENT)
+    _bullets(slide, Inches(5.33), Inches(2.40), Inches(4), Inches(2.4), [
+        "OSMnx 보행 도로 + 교차로 + 횡단보도",
+        "NGII 실측 건물 3,775동 (층수별 색)",
+        "기존 그늘막 18개 (검정/진청 우산)",
+        "수동 가중치 TOP10 (분홍 원)",
+        "학습 가중치 TOP10 (파란 별, BayesOpt)",
+        "그림자 표준편차 (Self-consistency 5회)",
+    ], size=8)
+
+    # 하단: 사용 안내
+    _box(slide, LEFT, Inches(4.20), CONTENT_WIDTH, Inches(0.85),
+          fill=RGBColor(0xF0, 0xF8, 0xFF), border=C_ACCENT, border_w=0.75)
+    _txt(slide, Inches(0.85), Inches(4.30), Inches(8.3), Inches(0.3),
+         "💡 발표 직후 시연 가능 — 브라우저 창에 미리 열어두기 권장",
+         size=10, bold=True, color=C_ACCENT)
+    _txt(slide, Inches(0.85), Inches(4.60), Inches(8.3), Inches(0.4),
+         "사각지대(TOP4·3·5·8) 4곳을 지도에서 직접 확인 → 가장 가까운 기존 그늘막까지 거리 popup",
+         size=9, color=C_TEXT)
+    _footer(slide, 27)
+
+
 def build_p26_conclusion(slide):
     """[26p] 결론 + 한 줄 요약 + 다음 단계."""
     _header(slide, "결론 · 다음 단계", "")
@@ -753,6 +1001,7 @@ def build():
         build_p24_osmnx_scenarios,
         build_p25_blindspot_budget,
         build_p26_conclusion,
+        build_p27_attachment,
     ]
     cover_idx = len(prs.slides)  # 추가될 표지의 위치 (15)
     for builder in builders:
@@ -776,7 +1025,16 @@ def build():
     # 3) 표지(가장 마지막 추가 - 사실 첫 번째 builder가 cover)를 맨 앞으로
     # cover_idx 가 cover 슬라이드 위치임
     move_slide_to_front(prs, cover_idx)
-    print(f"  → 표지를 1번째로 이동 (메인은 2~16, 보완은 17~26)")
+    print(f"  → 표지를 1번째로 이동 (메인은 2~16, 보완은 17~27)")
+
+    # 4) 스피커 노트 자동 삽입 (1p + 17~27p, 메인 2~16 은 친구 작품이라 건드리지 않음)
+    notes_inserted = 0
+    for i, slide in enumerate(prs.slides, 1):
+        note = SLIDE_NOTES.get(i, "")
+        if note:
+            slide.notes_slide.notes_text_frame.text = note.strip()
+            notes_inserted += 1
+    print(f"  → 스피커 노트 {notes_inserted}장 (1p + 17~27p) 삽입 완료")
 
     prs.save(str(OUT))
     print(f"\n[완료] {OUT}")
