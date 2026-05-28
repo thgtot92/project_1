@@ -757,6 +757,10 @@ def build():
     cover_idx = len(prs.slides)  # 추가될 표지의 위치 (15)
     for builder in builders:
         slide = prs.slides.add_slide(blank)
+        # layout 에서 상속된 placeholder (예: "제목 입력" 박스) 모두 제거
+        for ph in list(slide.placeholders):
+            sp = ph._element
+            sp.getparent().remove(sp)
         # 흰 배경
         bg = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0,
                                        prs.slide_width, prs.slide_height)
