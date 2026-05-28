@@ -32,7 +32,7 @@ FONT = "맑은 고딕"
 
 SLIDE_W = Inches(13.333)
 SLIDE_H = Inches(7.5)
-TOTAL = 15
+TOTAL = 16
 
 
 # 슬라이드별 스피커 노트 (PPTX notes_slide 에 자동 삽입)
@@ -45,9 +45,9 @@ SLIDE_NOTES = {
 - 코드: github.com/thgtot92/project_1
 """,
     2: """[문제 정의 · 접근 · 45초]
-- 핵심 메시지: 채권 트레이더 프레임이 도시 공간 최적화에 자연스럽게 이식됨
+- 핵심 메시지: 데이터 통합 + 다기준 의사결정으로 객관적 최적 입지 도출
 - 기존 방식 한계: 민원 기반 → 이미 커버된 곳 중복, 사각지대 누락
-- 트레이더 동형 매핑: 피처=수익률 곡선 요인, 격자=포트폴리오, 시나리오=금리 스트레스 테스트
+- 우리 방식: 9종 데이터 → 7 피처 가중합 → 다단계 필터 → 6 시나리오 비교 → 강건 입지
 - 중요: CV·GIS는 Score를 대체하지 않음. 입력 데이터 품질만 끌어올림. 설명가능성 유지
 
 예상 질문: 왜 딥러닝으로 Score 학습 안 했나? → 정답 라벨 없음 + 설명가능성 의도적 선택
@@ -120,7 +120,7 @@ SLIDE_NOTES = {
 """,
     11: """[시나리오 6 + 강건 입지 · 75초]
 - 6 시나리오: 기본/고령자/폭염/유동인구/보행환경/교차로
-- 동일 피처 위에 가중치만 바꿔 재스코어 = 정책 스트레스 테스트
+- 동일 피처 위에 가중치만 바꿔 재스코어 = 정책 민감도 분석
 - 유동인구 시나리오 최고 0.648 score
 - 강건 입지 2곳: 동작대로 사당-이수 축 (37.4907, 126.9647) + 사당역 인근 (37.4898, 126.9670)
 - "정책 관점이 바뀌어도 정답이 안 바뀌는 곳" = 예산 제약 최우선
@@ -145,7 +145,19 @@ SLIDE_NOTES = {
 
 예상 질문: 사각지대인데 score 낮으면 추천 가치? → 그늘막 0이라 shade 페널티 0. 거리뷰·DSM 보강 시 score 같이 상승 가능
 """,
-    14: """[Streamlit 대시보드 · 45초 — 시연용]
+    14: """[예산 제약 최적화 · 60초 — NEW]
+- 정책 직답: "예산 N원 = 그늘막 K개 = 어디?"
+- PuLP 정수 선형계획법 (CBC 솔버, 무료)
+- 목표: max Σ score_i · x_i
+- 제약: 예산(Σ cost·x ≤ B) + 공간 분산(가까운 격자 동시선택 X)
+- 후보 풀 50개 → 200m 이격 제약 29쌍 active
+- 결과: status=Optimal, 5개 선정, 총 score 1.852, 예산 100% 사용
+- 선정 분포: 사당-이수 4 + 노량진 1 (자동 분산)
+- TOP10 단순 정렬과 다른 점: 200m 이격으로 같은 곳 몰림 방지
+
+예상 질문: 단가 800만원 근거? → 더미. 실 단가 확보 시 즉시 교체. 단가가 달라도 비례적으로 K개 결정
+""",
+    15: """[Streamlit 대시보드 · 45초 — 시연용]
 - streamlit run app.py → http://localhost:8501
 - 사이드바: 시나리오 프리셋 + 7개 가중치 슬라이더
 - 본문: Folium 지도 + TOP10 표 + 통계
@@ -153,10 +165,10 @@ SLIDE_NOTES = {
 - 발표 중 "vuln 더 올리면?" 질문에 즉답
 - 시간 여유 있으면 별도 창에서 슬라이더 1~2개 움직여 시연
 """,
-    15: """[한계 + 한 줄 요약 · 45초]
-- 한계: 4종 기본 데이터 더미 / LST 래스터 미연결 / SAM 추정 높이 / 예산 제약 미반영
+    16: """[한계 + 한 줄 요약 · 45초]
+- 한계: 4종 기본 데이터 더미 / LST 래스터 미연결 / SAM 추정 높이 / 단가 800만원 가정
 - 다음 단계: API 연결 / 전 동 실측 / Streamlit 시각화 / 타 자치구 확장 (BBOX 교체)
-- 한 줄 요약: 항공·거리뷰·DSM·도로망·실측 통합 → 강건 입지 2 + 사각지대 4
+- 한 줄 요약: 항공·거리뷰·DSM·도로망·실측 + MCDA + 배낭 최적화로 강건 2 + 사각지대 4 + 예산 5곳
 - "감사합니다. 질문 받겠습니다."
 
 예상 질문:
@@ -323,7 +335,7 @@ def build():
               "2026년 5월",
               size=12, color=RGBColor(0x88, 0x88, 0x88))
 
-    # ────── 2. 문제 정의·접근 (트레이더 프레임) ──────
+    # ────── 2. 문제 정의·접근 (MCDA 프레임) ──────
     s = prs.slides.add_slide(blank)
     _add_header_bar(s, "문제 정의 · 접근",
                     "어디에 설치할 것인가 — 민원·직관이 아닌 데이터의 논리로")
@@ -338,12 +350,12 @@ def build():
     tf = box.text_frame; tf.word_wrap = True
     tf.margin_left = Inches(0.3); tf.margin_top = Inches(0.2)
     p = tf.paragraphs[0]; p.alignment = PP_ALIGN.LEFT
-    r = p.add_run(); r.text = "채권 트레이더 관점의 다변수 최적화"
+    r = p.add_run(); r.text = "다기준 의사결정 (MCDA) 기반 입지 추천"
     _set_font(r, size=19, bold=True, color=COLOR_PRIMARY)
     for t in [
-        "• 피처 = 채권의 수익률 곡선 요인 · 격자 = 포트폴리오 후보",
-        "• 가중합 + 공간 제약(보행로·건물·교차로·기존그늘막) = 리스크 예산 내 최적 포지션",
-        "• 시나리오 민감도 6종 = 금리 스트레스 테스트와 동형(同形)",
+        "• 다변수 가중합 + Min-Max 정규화로 객관적 점수 산출",
+        "• 공간 제약 4단계 (보행로·건물·교차로·기존그늘막)로 실제 설치 가능 위치만",
+        "• 6 시나리오 민감도 분석 → 정책 관점 불변 강건 입지 식별",
         "• 컴퓨터비전·GIS는 'Score를 대체'하는 게 아니라 '입력 데이터 품질을 끌어올림'",
     ]:
         p = tf.add_paragraph()
@@ -749,7 +761,64 @@ def build():
         p.space_before = Pt(3)
     _add_footer(s, 13)
 
-    # ────── 14. Streamlit 대시보드 ──────
+    # ────── 14. 예산 제약 최적화 (NEW) ──────
+    s = prs.slides.add_slide(blank)
+    _add_header_bar(s, "예산 제약 최적화 (Budget-Constrained Knapsack)",
+                    "예산 N원 = 그늘막 K개 = 어디? 정책 결정에 직접 답")
+    box = _box(s, Inches(0.75), Inches(1.8), Inches(7.5), Inches(2.0),
+                COLOR_DARK)
+    tf = box.text_frame; tf.word_wrap = True
+    tf.margin_left = Inches(0.3); tf.margin_top = Inches(0.2)
+    p = tf.paragraphs[0]; p.alignment = PP_ALIGN.CENTER
+    r = p.add_run()
+    r.text = "max Σ score_i × x_i"
+    _set_font(r, size=18, bold=True, color=RGBColor(0xFF, 0xEE, 0x58))
+    for t in [
+        "subject to:",
+        "  Σ cost_i × x_i ≤ 예산",
+        "  x_i + x_j ≤ 1   if dist(i,j) < 200m",
+        "  x_i ∈ {0, 1}",
+    ]:
+        p2 = tf.add_paragraph(); p2.alignment = PP_ALIGN.CENTER
+        r = p2.add_run(); r.text = t
+        _set_font(r, size=12, color=RGBColor(0xFF, 0xFF, 0xFF))
+        p2.space_before = Pt(2)
+
+    _add_bullets(s, Inches(0.75), Inches(4.0), Inches(7.5), Inches(2.5), [
+        "PuLP 정수 선형계획법 (CBC 솔버)",
+        "후보 풀: 필터 통과 격자 score 상위 50개",
+        "예산: 4,000만원 / 그늘막 단가: 800만원 → 최대 5개",
+        "공간 분산 제약: 선정 격자 간 ≥ 200m 이격 (29쌍 제약)",
+        "결과: status=Optimal, 5개 선정, 총 score 1.852, 예산 100% 사용",
+    ], size=13)
+
+    box2 = _box(s, Inches(8.5), Inches(1.8), Inches(4.4), Inches(4.5),
+                 RGBColor(0xFF, 0xF4, 0xE5), COLOR_ACCENT, 2)
+    tf = box2.text_frame; tf.word_wrap = True
+    tf.margin_left = Inches(0.2); tf.margin_top = Inches(0.2)
+    p = tf.paragraphs[0]
+    r = p.add_run(); r.text = "🎯 선정 5곳 (분산 균형)"
+    _set_font(r, size=13, bold=True, color=COLOR_ACCENT)
+    for t in [
+        "",
+        "#1 (37.490, 126.964) s=0.466",
+        "    이수역 인근",
+        "#2 (37.493, 126.962) s=0.363",
+        "    이수 북쪽",
+        "#3 (37.491, 126.968) s=0.359",
+        "    사당역 동쪽",
+        "#4 (37.486, 126.967) s=0.333",
+        "    사당역 남쪽",
+        "#5 (37.513, 126.944) s=0.331",
+        "    노량진역 인근",
+    ]:
+        p = tf.add_paragraph()
+        r = p.add_run(); r.text = t
+        _set_font(r, size=11, color=COLOR_DARK)
+        p.space_before = Pt(1)
+    _add_footer(s, 14)
+
+    # ────── 15. Streamlit 대시보드 ──────
     s = prs.slides.add_slide(blank)
     _add_header_bar(s, "인터랙티브 대시보드 (Streamlit)",
                     "가중치 슬라이더 → TOP 10 실시간 재계산")
@@ -764,9 +833,9 @@ def build():
     _placeholder_image(s, Inches(7.5), Inches(1.8),
                        Inches(5.3), Inches(4.5),
                        "Streamlit 대시보드 스크린샷")
-    _add_footer(s, 14)
+    _add_footer(s, 15)
 
-    # ────── 15. 한계 + 한 줄 요약 ──────
+    # ────── 16. 한계 + 한 줄 요약 ──────
     s = prs.slides.add_slide(blank)
     _add_header_bar(s, "한계 · 다음 단계 · 한 줄 요약", None)
 
@@ -776,7 +845,7 @@ def build():
         "5종 기본 데이터 중 4종 더미 (파이프라인은 자동 전환)",
         "LST 래스터 직접 파싱 미연결 (Landsat ST_B10)",
         "SAM 추출 건물에 추정 높이 부여 (NGII는 실측)",
-        "예산 제약 미반영 (K개 최적 조합 = 배낭 문제)",
+        "예산·단가는 더미 800만원/개 (실 단가 확보 시 교체)",
     ], size=13)
 
     _add_text(s, Inches(7.5), Inches(1.7), Inches(6), Inches(0.4),
@@ -803,10 +872,10 @@ def build():
     p2.space_before = Pt(6)
     p3 = tf.add_paragraph(); p3.alignment = PP_ALIGN.CENTER
     r = p3.add_run()
-    r.text = "SAM + SegFormer + Deep Umbra(DSM) + OSMnx + NGII + 실측 그늘막 + MCDA"
+    r.text = "SAM + SegFormer + Deep Umbra(DSM) + OSMnx + NGII + 실측 그늘막 + MCDA + Knapsack"
     _set_font(r, size=11, color=RGBColor(0xCC, 0xCC, 0xCC))
     p3.space_before = Pt(4)
-    _add_footer(s, 15)
+    _add_footer(s, 16)
 
     # 각 슬라이드에 스피커 노트 삽입 (PPTX notes_slide)
     for i, slide in enumerate(prs.slides, 1):

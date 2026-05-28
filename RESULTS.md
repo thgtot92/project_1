@@ -109,7 +109,7 @@
 
 ## 6. 기술적 하이라이트
 
-### 6.1 다변수 최적화 (채권 트레이더 방법론 이식 + CV·DSM·OSMnx 통합)
+### 6.1 다기준 의사결정(MCDA) + CV·DSM·OSMnx 통합
 ```
 Score = 0.22·popdens + 0.22·lst + 0.18·vuln
       − 0.15·shade − 0.05·natural          (CV-A SAM + 흑석동 DSM 결합)

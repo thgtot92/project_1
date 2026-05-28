@@ -114,6 +114,14 @@ def run():
         avg_sv = float(top["sv_deficit"].mean())
         print(f"\n  [CV] TOP10 평균 streetview_deficit: {avg_sv:.3f}")
 
+    print("\n[STEP 5/5] 예산 제약 최적화 (Budget Knapsack)")
+    try:
+        from src.optimization import run as run_optimization
+        cand_for_opt = filter_candidates(scored, verbose=False)
+        run_optimization(cand_for_opt, budget_manwon=4000)
+    except Exception as e:
+        print(f"  [OPT] 실패 (스킵): {e}")
+
     print("\n[완료] output/ 디렉토리를 확인하세요.")
 
 

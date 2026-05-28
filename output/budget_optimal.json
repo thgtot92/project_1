@@ -1,0 +1,50 @@
+{
+  "status": "Optimal",
+  "budget_manwon": 4000,
+  "cost_per_shade_manwon": 800,
+  "n_max_by_budget": 5,
+  "min_separation_m": 200,
+  "candidate_pool_size": 50,
+  "spatial_separation_pairs": 29,
+  "n_selected": 5,
+  "total_score": 1.852,
+  "total_cost_manwon": 4000,
+  "remaining_budget_manwon": 0,
+  "selected": [
+    {
+      "rank": 1,
+      "lat": 37.48976,
+      "lon": 126.96362,
+      "score": 0.466,
+      "cost_manwon": 800
+    },
+    {
+      "rank": 2,
+      "lat": 37.49336,
+      "lon": 126.96246,
+      "score": 0.363,
+      "cost_manwon": 800
+    },
+    {
+      "rank": 3,
+      "lat": 37.49068,
+      "lon": 126.96813,
+      "score": 0.359,
+      "cost_manwon": 800
+    },
+    {
+      "rank": 4,
+      "lat": 37.48617,
+      "lon": 126.96703,
+      "score": 0.333,
+      "cost_manwon": 800
+    },
+    {
+      "rank": 5,
+      "lat": 37.5131,
+      "lon": 126.94421,
+      "score": 0.331,
+      "cost_manwon": 800
+    }
+  ]
+}

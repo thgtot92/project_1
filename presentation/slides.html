@@ -132,15 +132,15 @@
     <li>제안: 다변수 가중합 + 다단계 공간 필터 + 다정책 시나리오 + 4종 외부 데이터 통합</li>
   </ul>
   <div class="callout">
-    <b style="color:var(--c-primary); font-size:1.05em;">채권 트레이더 관점의 다변수 최적화</b>
+    <b style="color:var(--c-primary); font-size:1.05em;">다기준 의사결정 (MCDA) 기반 입지 추천</b>
     <ul style="margin:0.3em 0 0 1em;">
-      <li>피처 = 채권 수익률 곡선 요인 · 격자 = 포트폴리오 후보</li>
-      <li>가중합 + 공간 제약(보행로·건물·교차로·기존그늘막) = 리스크 예산 내 최적 포지션</li>
-      <li>시나리오 민감도 6종 = 금리 스트레스 테스트와 동형</li>
+      <li>다변수 가중합 + Min-Max 정규화로 객관적 점수 산출</li>
+      <li>공간 제약 4단계(보행로·건물·교차로·기존그늘막)로 실제 설치 가능 위치만</li>
+      <li>6 시나리오 민감도 분석 → 정책 관점 불변 강건 입지 식별</li>
       <li>CV·GIS는 'Score를 대체'하는 게 아니라 '입력 데이터 품질을 끌어올림'</li>
     </ul>
   </div>
-  <div class="footer"><span>동작구 그늘막 · 한영재 · 2025961227</span><span>2 / 15</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재 · 2025961227</span><span>2 / 16</span></div>
 </section>
 
 <!-- 3. 파이프라인 개요 -->
@@ -164,7 +164,7 @@
   <p style="font-size:0.6em; color:var(--c-sub); margin-top:1em;">
     외부 데이터: V-World 위성 · Mapillary 거리뷰 · 흑석동 DSM/DEM/NGII · OSMnx 도로망·교차로·횡단보도 · 흑석동 실측 그늘막 18개
   </p>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>3 / 15</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>3 / 16</span></div>
 </section>
 
 <!-- 4. 데이터 9종 -->
@@ -190,7 +190,7 @@
   <p style="font-size:0.65em; color:var(--c-sub); margin-top:0.5em;">
     ⚙ 5종 기본 데이터는 더미↔실데이터 자동 스위칭 · 외부 API는 첫 1회 호출 후 디스크 캐시
   </p>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>4 / 15</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>4 / 16</span></div>
 </section>
 
 <!-- 5. Score 식 7 피처 -->
@@ -215,7 +215,7 @@
   <p style="color:var(--c-primary); font-weight:bold; font-size:0.75em; margin-top:0.5em;">
     🎚 Streamlit 대시보드 슬라이더로 실시간 조정 · 6개 시나리오 프리셋 내장
   </p>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>5 / 15</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>5 / 16</span></div>
 </section>
 
 <!-- 6. 공간 필터링 강화 -->
@@ -233,7 +233,7 @@
   </div>
   <iframe class="map-frame" src="../output/shade_map.html" loading="lazy"></iframe>
   <div class="map-caption">▲ shade_map.html — TOP 10 + 보행로 + 기존 그늘막 (실시간 임베드)</div>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>6 / 15</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>6 / 16</span></div>
 </section>
 
 <!-- 7. CV-A -->
@@ -260,7 +260,7 @@
       </ul>
     </div>
   </div>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>7 / 15</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>7 / 16</span></div>
 </section>
 
 <!-- 8. CV-B -->
@@ -292,7 +292,7 @@
       </div>
     </div>
   </div>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>8 / 15</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>8 / 16</span></div>
 </section>
 
 <!-- 9. CV-DSM (Deep Umbra) -->
@@ -325,7 +325,7 @@
       </p>
     </div>
   </div>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>9 / 15</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>9 / 16</span></div>
 </section>
 
 <!-- 10. OSMnx -->
@@ -355,7 +355,7 @@
       </ul>
     </div>
   </div>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>10 / 15</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>10 / 16</span></div>
 </section>
 
 <!-- 11. 시나리오 6 + 강건 입지 -->
@@ -400,7 +400,7 @@
   <p style="color:var(--c-primary); text-align:center; font-weight:bold; font-size:0.8em;">
     6 시나리오 공통 강건 입지 2곳 → 예산 제약 시 최우선 설치
   </p>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>11 / 15</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>11 / 16</span></div>
 </section>
 
 <!-- 12. 1차 발표 3대 구역 검증 -->
@@ -437,7 +437,7 @@
     사당-이수 환승 축은 모든 변화에도 흔들리지 않는 <b>강건 입지 #1·#2</b> 차지.<br>
     상도로는 1차 발표 때 ✓였으나 보행로 5m 강화로 컷 → 정책적 재검토 필요.
   </div>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>12 / 15</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>12 / 16</span></div>
 </section>
 
 <!-- 13. 흑석동 — 실측 vs 신규 추천 -->
@@ -482,10 +482,50 @@
       </div>
     </div>
   </div>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>13 / 15</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>13 / 16</span></div>
 </section>
 
-<!-- 14. Streamlit -->
+<!-- 14. 예산 제약 최적화 (NEW) -->
+<section>
+  <div class="title-bar">
+    <h2>예산 제약 최적화 (Knapsack) <span class="badge new">NEW</span></h2>
+    <h3>예산 N원 = 그늘막 K개 = 어디? 정책 결정에 직접 답</h3>
+  </div>
+  <div class="two-col">
+    <div>
+      <div class="score-box" style="font-size:0.9em;">
+        max Σ score_i · x_i<br>
+        <span style="font-size:0.75em;">s.t. Σ cost · x ≤ 예산<br>
+        x_i + x_j ≤ 1 if dist(i,j) &lt; 200m<br>
+        x_i ∈ {0, 1}</span>
+      </div>
+      <ul style="font-size:0.78em;">
+        <li><b>PuLP 정수 선형계획법</b> (CBC 솔버, 무료)</li>
+        <li>후보 풀: 필터 통과 격자 score 상위 50개</li>
+        <li>예산 4,000만원 / 단가 800만원 → 최대 5개</li>
+        <li>공간 분산 ≥ 200m (29쌍 제약 active)</li>
+        <li>결과: <b>status=Optimal, 5개 선정, 예산 100% 사용</b></li>
+      </ul>
+    </div>
+    <div class="callout warn">
+      <b>🎯 선정 5곳 (분산 균형)</b>
+      <ul style="margin:0.4em 0 0 1em; font-size:0.85em;">
+        <li>#1 (37.490, 126.964) s=0.466 — 이수역 인근</li>
+        <li>#2 (37.493, 126.962) s=0.363 — 이수 북쪽</li>
+        <li>#3 (37.491, 126.968) s=0.359 — 사당역 동쪽</li>
+        <li>#4 (37.486, 126.967) s=0.333 — 사당역 남쪽</li>
+        <li>#5 (37.513, 126.944) s=0.331 — <b>노량진역 인근</b></li>
+      </ul>
+      <p style="margin-top:0.4em; font-size:0.75em;">
+        총 score 1.852 / TOP10 단순 정렬과 달리 200m 이격 제약으로
+        같은 곳 몰림 방지 + 노량진도 자동 포함
+      </p>
+    </div>
+  </div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>14 / 16</span></div>
+</section>
+
+<!-- 15. Streamlit -->
 <section>
   <div class="title-bar">
     <h2>인터랙티브 대시보드 (Streamlit)</h2>
@@ -506,10 +546,10 @@
       (별도 창 <code>streamlit run app.py</code>)
     </div>
   </div>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>14 / 15</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>15 / 16</span></div>
 </section>
 
-<!-- 15. 한계 + 요약 -->
+<!-- 16. 한계 + 요약 -->
 <section>
   <div class="title-bar">
     <h2>한계 · 다음 단계 · 한 줄 요약</h2>
@@ -521,7 +561,7 @@
         <li>5종 기본 데이터 중 4종 더미</li>
         <li>LST 래스터 직접 파싱 미연결</li>
         <li>SAM 추출 건물 추정 높이 (NGII는 실측)</li>
-        <li>예산 제약 미반영 (배낭 문제)</li>
+        <li>예산·단가 더미 800만원/개 (실 단가 확보 시 교체)</li>
       </ul>
     </div>
     <div>
@@ -535,12 +575,14 @@
     </div>
   </div>
   <div class="callout dark">
-    항공사진·거리뷰·DSM·도로망·실측 그늘막을 컴퓨터비전·GIS로 통합해,<br>
-    6 시나리오 모두에서 살아남는 강건 입지 <span style="color:#FFEE58">2곳</span> +
-    흑석동 사각지대 <span style="color:#FFEE58">4곳</span>을 도출했다.
-    <div class="sub">— SAM + SegFormer + Deep Umbra(DSM) + OSMnx + NGII + 실측 그늘막 + MCDA</div>
+    항공사진·거리뷰·DSM·도로망·실측 그늘막을 컴퓨터비전·GIS로 통합하고
+    MCDA + 배낭 최적화로,<br>
+    강건 입지 <span style="color:#FFEE58">2곳</span>
+    + 흑석동 사각지대 <span style="color:#FFEE58">4곳</span>
+    + 예산 4천만원 최적 배치 <span style="color:#FFEE58">5곳</span>을 도출했다.
+    <div class="sub">— SAM + SegFormer + Deep Umbra(DSM) + OSMnx + NGII + 실측 그늘막 + MCDA + Knapsack</div>
   </div>
-  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>15 / 15</span></div>
+  <div class="footer"><span>동작구 그늘막 · 한영재</span><span>16 / 16</span></div>
 </section>
 
 </div></div>

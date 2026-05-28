@@ -1,6 +1,6 @@
 # 동작구 여름 그늘막 설치 최적화
 
-> 채권 트레이더의 다변수 최적화 방법론을 도시 공간 데이터에 이식한
+> 다기준 의사결정(MCDA) + 컴퓨터비전 + GIS를 통합한
 > **그늘막 최적 입지 추천 시스템**
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
