@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8">
+<title>실험 보고서 — 동작구 그늘막 입지 분석</title>
+<style>
+  :root {
+    --c-text: #37352F; --c-sub: #787774; --c-muted: #9B9A97;
+    --c-accent: #2383E2; --c-panel: #F7F6F3; --c-border: #E9E9E7;
+    --c-green: #0F7B6C; --c-amber: #CB7B26; --c-red: #E03E3E;
+  }
+  body { font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+    color: var(--c-text); background: #fff; margin: 0; padding: 0;
+    line-height: 1.5; }
+  .container { max-width: 1280px; margin: 0 auto; padding: 30px 40px; }
+  h1 { font-size: 28px; margin: 0 0 8px; color: var(--c-text); }
+  h2 { font-size: 20px; margin: 36px 0 12px; padding-left: 12px;
+        border-left: 5px solid var(--c-accent); color: var(--c-text); }
+  h3 { font-size: 16px; color: var(--c-sub); margin: 16px 0 8px; }
+  .meta { color: var(--c-muted); font-size: 13px; margin-bottom: 24px; }
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr);
+                    gap: 14px; margin: 24px 0; }
+  .summary { background: var(--c-panel); border: 1px solid var(--c-border);
+              border-radius: 8px; padding: 16px 18px; }
+  .summary .num { font-size: 28px; font-weight: bold;
+                    color: var(--c-accent); margin: 4px 0; }
+  .summary .lbl { font-size: 11px; color: var(--c-sub);
+                    text-transform: uppercase; letter-spacing: 0.5px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0;
+            font-size: 13px; }
+  th, td { padding: 8px 12px; text-align: left;
+            border-bottom: 1px solid var(--c-border); }
+  th { background: var(--c-text); color: white; font-weight: 600; }
+  tbody tr:nth-child(even) { background: var(--c-panel); }
+  .card { display: inline-block; background: var(--c-panel);
+            border: 1px solid var(--c-border); border-radius: 8px;
+            padding: 12px 16px; margin: 6px 6px 0 0; min-width: 200px; }
+  .card .coord { font-family: Consolas, monospace; color: var(--c-sub);
+                   font-size: 12px; }
+  .note { background: #F0F8FF; border-left: 4px solid var(--c-accent);
+           padding: 10px 16px; margin: 12px 0; font-size: 13px; }
+  .pass { color: var(--c-green); font-weight: bold; }
+  .partial { color: var(--c-amber); font-weight: bold; }
+  .delta-up { color: var(--c-red); font-weight: bold; }
+  .delta-down { color: var(--c-green); font-weight: bold; }
+  iframe { width: 100%; height: 540px; border: 1px solid var(--c-border);
+             border-radius: 8px; margin: 8px 0; }
+  .maps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .maps-grid iframe { height: 420px; }
+  code { background: var(--c-panel); padding: 1px 5px; border-radius: 3px;
+           font-family: Consolas, monospace; font-size: 12px; }
+  .footer { margin-top: 40px; padding-top: 16px;
+              border-top: 1px solid var(--c-border);
+              color: var(--c-muted); font-size: 12px; }
+</style></head><body><div class="container">
+
+<h1>📊 실험 보고서 — 동작구 그늘막 입지 분석</h1>
+<div class="meta">자동 생성: 2026-06-03 16:34 · MCDA + CV-A/B + CV-DSM(9시점) + OSMnx + BayesOpt + 배낭 최적화</div>
+
+<div class="summary-grid">
+  <div class="summary"><div class="lbl">강건 입지</div><div class="num">0</div><div>6 시나리오 공통</div></div>
+  <div class="summary"><div class="lbl">시나리오</div><div class="num">6</div><div>가중치 프리셋</div></div>
+  <div class="summary"><div class="lbl">배낭 선정</div><div class="num">5</div><div>예산 4천만원</div></div>
+  <div class="summary"><div class="lbl">산출물</div><div class="num">19</div><div>파일</div></div>
+</div>
+
+<h2>🎯 시나리오 비교 · 강건 입지</h2>
+<table><thead><tr><th>시나리오</th><th>최고 Score</th><th>TOP1 좌표</th></tr></thead><tbody><tr><td><b>기본</b></td><td>0.466</td><td>37.48976, 126.96362</td></tr><tr><td><b>고령자_중시</b></td><td>0.478</td><td>37.48533, 126.98174</td></tr><tr><td><b>폭염_중시</b></td><td>0.569</td><td>37.48976, 126.96362</td></tr><tr><td><b>유동인구_중시</b></td><td>0.584</td><td>37.48976, 126.96362</td></tr><tr><td><b>보행환경_중시</b></td><td>0.504</td><td>37.48976, 126.96362</td></tr><tr><td><b>교차로_중시</b></td><td>0.404</td><td>37.48419, 126.92972</td></tr></tbody></table>
+<h3>강건 입지 (6 시나리오 공통 추천)</h3>
+<p>강건 입지 없음</p>
+
+<h2>📌 1차 발표 3대 집중구역 검증</h2>
+<table><thead><tr><th>구역</th><th>판정</th><th>반경 내 TOP</th><th>최근접</th></tr></thead>
+<tbody><tr><td>노량진역-수산시장 보행로</td><td class='pass'>✓</td><td>2곳</td><td>159m</td></tr><tr><td>사당역4번-이수역 축</td><td class='pass'>✓</td><td>4곳</td><td>253m</td></tr><tr><td>상도로 주거축</td><td class='partial'>△</td><td>0곳</td><td>1516m</td></tr></tbody></table>
+
+<h2>🎯 가중치 자동 튜닝 (Bayesian Optimization)</h2>
+<table><thead><tr><th>피처</th><th>수동</th><th>학습 (BayesOpt)</th><th>변화</th></tr></thead><tbody><tr><td>popdens</td><td>+0.180</td><td>+0.260</td><td class='delta-up'>↑ +0.080</td></tr><tr><td>lst</td><td>+0.180</td><td>+0.318</td><td class='delta-up'>↑ +0.138</td></tr><tr><td>vuln</td><td>+0.180</td><td>+0.061</td><td class='delta-down'>↓ -0.119</td></tr><tr><td>shade</td><td>-0.150</td><td>-0.295</td><td class='delta-down'>↓ -0.145</td></tr><tr><td>natural</td><td>-0.050</td><td>-0.178</td><td class='delta-down'>↓ -0.128</td></tr><tr><td>streetview_deficit</td><td>+0.120</td><td>+0.000</td><td class='delta-down'>↓ -0.120</td></tr><tr><td>intersection_density</td><td>+0.200</td><td>+0.255</td><td class='delta-up'>↑ +0.055</td></tr></tbody></table><p class='note'>검증: 실측 위치 평균 score <b>0.0873</b> (수동) → <b>-0.1218</b> (학습) · Δ = <b>-0.2091</b> (음수 = 가설 부합)</p>
+
+<h2>💰 예산 제약 배낭 최적화 (Knapsack)</h2>
+<p><b>예산 4,000만원</b> · 단가 800만원/개 → 최대 5개</p><p>solver status: <b>Optimal</b> · 선정 <b>5개</b> · 총 score <b>1.852</b> · 공간 분산 200m (29쌍 제약)</p><table><thead><tr><th>#</th><th>좌표</th><th>score</th></tr></thead><tbody><tr><td>#1</td><td>37.48976, 126.96362</td><td>0.466</td></tr><tr><td>#2</td><td>37.49336, 126.96246</td><td>0.363</td></tr><tr><td>#3</td><td>37.49068, 126.96813</td><td>0.359</td></tr><tr><td>#4</td><td>37.48617, 126.96703</td><td>0.333</td></tr><tr><td>#5</td><td>37.51310, 126.94421</td><td>0.331</td></tr></tbody></table>
+
+<h2>🌐 인터랙티브 지도</h2>
+<h3>기본 TOP10</h3>
+<iframe src="shade_map.html" loading="lazy"></iframe>
+<div class="maps-grid">
+<div><h3>6 시나리오 토글</h3><iframe src="scenarios_map.html" loading="lazy"></iframe></div>
+<div><h3>예산 4천만원 배낭 결과</h3><iframe src="budget_optimal.html" loading="lazy"></iframe></div>
+</div>
+<h3>흑석동 정밀 (NGII + Self-consistency + 학습 가중치)</h3>
+<iframe src="heukseok_focus.html" style="height:620px;" loading="lazy"></iframe>
+
+<h2>📁 산출물 파일 목록</h2>
+<table><thead><tr><th>파일</th><th>설명</th><th>크기</th></tr></thead><tbody><tr><td><code>output/shade_map.html</code> ✓</td><td>기본 TOP10 지도</td><td>9.8 MB</td></tr><tr><td><code>output/scenarios_map.html</code> ✓</td><td>6 시나리오 토글</td><td>7.0 MB</td></tr><tr><td><code>output/heukseok_focus.html</code> ✓</td><td>흑석동 정밀 + 학습 가중치 + 그림자 std</td><td>6.6 MB</td></tr><tr><td><code>output/budget_optimal.html</code> ✓</td><td>예산 배낭 최적화 결과 지도</td><td>258 KB</td></tr><tr><td><code>output/scenarios_comparison.csv</code> ✓</td><td>시나리오 × TOP10 비교표</td><td>4 KB</td></tr><tr><td><code>output/scenarios_overlap.json</code> ✓</td><td>강건 입지 + 중복 분석</td><td>990 B</td></tr><tr><td><code>output/focus_areas_validation.json</code> ✓</td><td>1차 발표 3대 구역 검증</td><td>2 KB</td></tr><tr><td><code>output/rationales.json</code> ✓</td><td>LLM 설치 근거</td><td>3 KB</td></tr><tr><td><code>output/weights_tuned.json</code> ✓</td><td>Bayesian Opt 학습 가중치</td><td>925 B</td></tr><tr><td><code>output/budget_optimal.json</code> ✓</td><td>배낭 최적화 선정 결과</td><td>988 B</td></tr><tr><td><code>data/processed/heukseok_shadow_accum.tif</code> ✓</td><td>DSM 9시점 누적 그림자</td><td>493 KB</td></tr><tr><td><code>data/processed/grid_heukseok_natural.csv</code> ✓</td><td>흑석동 격자 자연그늘</td><td>15 KB</td></tr><tr><td><code>data/processed/grid_heukseok_consistency.csv</code> ✓</td><td>Self-consistency 5회</td><td>18 KB</td></tr><tr><td><code>data/processed/grid_streetview.csv</code> ✓</td><td>CV-B 격자별 그늘 결핍</td><td>1 KB</td></tr><tr><td><code>data/processed/osm_intersections.geojson</code> ✓</td><td>OSMnx 교차로 GeoJSON</td><td>631 KB</td></tr><tr><td><code>data/processed/osm_crossings.geojson</code> ✓</td><td>OSMnx 횡단보도 GeoJSON</td><td>57 KB</td></tr><tr><td><code>data/processed/grid_intersection.csv</code> ✓</td><td>격자별 결집지 밀도</td><td>11 KB</td></tr><tr><td><code>data/raw/existing_shades.csv</code> ✓</td><td>실측 그늘막 18개</td><td>2 KB</td></tr><tr><td><code>data/raw/buildings.geojson</code> ✓</td><td>CV-A SAM 30동</td><td>18 KB</td></tr></tbody></table>
+
+<div class="footer">
+  데이터기반 도시설계 기말 · 한영재·문치국·원우식<br>
+  Repository: github.com/thgtot92/project_1 · MIT License
+</div>
+
+</div></body></html>

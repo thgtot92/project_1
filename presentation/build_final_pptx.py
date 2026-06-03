@@ -121,10 +121,11 @@ CV-B · SegFormer-b0 (NVIDIA CityScapes pretrained):
     21: """[21p · CV-DSM + Self-consistency · 60초 — NEW]
 강의 13p + 40p 동시 반영:
 
-CV-DSM (Deep Umbra 영감):
+CV-DSM (Deep Umbra 영감, 9시점으로 확장):
 - 흑석동 DSM − DEM = nDSM (객체 높이)
-- 4시점 (10·12·14·16시) shadow union → 누적 비율
-- 309 격자 평균 누적 0.157
+- 9시점 (09~17시 1시간 간격) shadow union → 누적 비율 [기존 4시점에서 확장]
+- 309 격자 평균 누적 0.148
+- 시간 누적 정밀도 ↑ → 시나리오 간 분산 ↑ → 강건 입지 검증 더 엄격
 
 Self-consistency 5회 (NEW, 강의 40p 권장):
 - 단일 ray-cast 는 태양위치 가정에 의존 → 신뢰구간 없음
@@ -132,7 +133,9 @@ Self-consistency 5회 (NEW, 강의 40p 권장):
 - 평균 std 0.021 (낮음 = 안정적, 결과 신뢰)
 - 흑석동 focus map 에 std 레이어 토글 가능
 
-예상 질문: 왜 풀 GAN 안 썼나? → 학습 시간·데이터 부담. ray-cast 로 같은 메시지
+예상 질문:
+- 왜 풀 GAN 안 썼나? → 학습 시간·데이터 부담. ray-cast 로 같은 메시지
+- 왜 9시점? → 보행자 활동시간 (오전·오후 누적) 모두 반영, Deep Umbra 원논문 정신
 """,
     # 22: 흑석동 정밀 분석
     22: """[22p · 흑석동 정밀 분석 · 60초]
@@ -217,19 +220,25 @@ OSMnx (보행자 결집 지점):
 - 코드? → github.com/thgtot92/project_1 (MIT)
 """,
     # 27: 첨부 자료
-    27: """[27p · 첨부 자료 · 30초]
-- output/heukseok_focus.html — 흑석동 인터랙티브 지도 (브라우저)
-- 같은 폴더에 동봉 / 더블클릭으로 열림
+    27: """[27p · 첨부 자료 · 45초]
+두 개의 HTML 파일을 함께 동봉합니다:
 
-지도 레이어 (토글 가능):
+첨부 ① output/heukseok_focus.html (흑석동 인터랙티브 지도)
 - OSMnx 보행 도로 + 교차로 + 횡단보도
-- NGII 실측 건물 3,775동 (층수별 색)
-- 기존 그늘막 18개 (검정 우산)
-- 수동 가중치 TOP10 (분홍 원)
-- 학습 가중치 TOP10 (파란 별, BayesOpt 결과)
-- 그림자 표준편차 (Self-consistency 5회)
+- NGII 건물 3,775동 (층수별 색)
+- 기존 그늘막 18개 + TOP10 수동/학습 비교
+- 그림자 표준편차 (Self-consistency)
 
-심사위원이 직접 토글하면서 검토 가능
+첨부 ② output/report.html (자동 실험 보고서, NEW)
+- 한 페이지에 모든 산출물 통합
+- 요약 카드 + 시나리오 표 + 강건 입지 + 3대 구역 검증
+- BayesOpt 가중치 비교표
+- 4개 지도 iframe 임베드 (shade/scenarios/budget/heukseok)
+- 산출물 파일 목록 19종 (크기 포함)
+
+자동 생성: scripts/build_report.py — 발표 직전 1초 실행으로 최신 상태 갱신 가능
+
+심사위원이 직접 토글하며 검토 가능 + 발표 직후 모든 결과를 한 화면에 보여줄 수 있음
 """,
 }
 
@@ -591,8 +600,9 @@ def build_p21_dsm_consistency(slide):
     _bullets(slide, LEFT, Inches(1.45), Inches(5.0), Inches(2.0), [
         "강의 13p 추천 Deep Umbra (GAN) → DSM ray-cast 로 단순 이식",
         "흑석동 DSM(표면) − DEM(지표) = nDSM (객체 순높이)",
-        "4시점 (10·12·14·16시) shadow union → 누적 그림자 비율",
-        "309 격자 평균 누적 그림자 0.157 → natural 피처",
+        "9시점 (09~17시 1시간 간격) shadow union → 누적 그림자 비율  (NEW: 4→9 확장)",
+        "309 격자 평균 누적 그림자 0.148 → natural 피처",
+        "시간 누적 정밀도 ↑ → 시나리오 간 분산 ↑ → 강건 입지 검증 더 엄격",
     ], size=9)
 
     # Self-consistency 박스 (NEW)
@@ -877,55 +887,61 @@ def build_p25_blindspot_budget(slide):
 
 
 def build_p27_attachment(slide):
-    """[27p] 첨부 자료 — 흑석동 HTML 인터랙티브 지도 안내."""
-    _header(slide, "첨부 자료",
-            "흑석동 인터랙티브 지도 — output/heukseok_focus.html")
+    """[27p] 첨부 자료 — 흑석동 HTML + 자동 실험 보고서."""
+    _header(slide, "첨부 자료 · 자동 보고서",
+            "인터랙티브 지도 + 한 페이지 통합 보고서 (단일 HTML)")
 
-    _txt(slide, LEFT, Inches(1.45), CONTENT_WIDTH, Inches(0.4),
-         "본 PPTX 와 함께 동봉된 HTML 파일을 브라우저에서 열면 "
-         "심사위원이 직접 레이어를 토글하며 검토할 수 있습니다.",
+    _txt(slide, LEFT, Inches(1.45), CONTENT_WIDTH, Inches(0.3),
+         "본 PPTX 와 함께 동봉되는 두 개의 HTML — 브라우저에서 열어 검토 가능.",
          size=10, color=C_SUB)
 
-    # 좌측: 파일 경로 박스
-    _box(slide, LEFT, Inches(2.0), Inches(4.3), Inches(1.8),
+    # 좌측: 첨부 1 — 흑석동 focus map
+    _box(slide, LEFT, Inches(1.85), Inches(4.3), Inches(3.0),
           fill=C_TEXT, border=None)
-    _txt(slide, Inches(0.85), Inches(2.15), Inches(4), Inches(0.3),
-         "📎 첨부 파일", size=11, bold=True,
+    _txt(slide, Inches(0.85), Inches(1.95), Inches(4), Inches(0.3),
+         "📎 첨부 ① 흑석동 인터랙티브 지도", size=11, bold=True,
          color=RGBColor(0xFF, 0xEE, 0x58))
-    _txt(slide, Inches(0.85), Inches(2.55), Inches(4), Inches(0.4),
-         "output/heukseok_focus.html",
-         size=12, bold=True,
+    _txt(slide, Inches(0.85), Inches(2.30), Inches(4), Inches(0.4),
+         "output/heukseok_focus.html", size=11, bold=True,
          color=RGBColor(0xFF, 0xFF, 0xFF), font=FONT_MONO)
-    _txt(slide, Inches(0.85), Inches(3.05), Inches(4), Inches(0.4),
-         "약 7 MB · 단일 HTML (의존성 없음)",
+    _txt(slide, Inches(0.85), Inches(2.65), Inches(4), Inches(0.3),
+         "지도 레이어 (토글):",
          size=9, color=RGBColor(0xCC, 0xCC, 0xCC))
-    _txt(slide, Inches(0.85), Inches(3.35), Inches(4), Inches(0.4),
-         "더블클릭 → 기본 브라우저로 자동 열림",
-         size=9, color=RGBColor(0xCC, 0xCC, 0xCC))
-
-    # 우측: 지도 레이어 목록
-    _box(slide, Inches(5.18), Inches(2.0), Inches(4.15), Inches(2.8),
-          fill=C_PANEL, border=C_ACCENT, border_w=1.25)
-    _txt(slide, Inches(5.33), Inches(2.10), Inches(4), Inches(0.3),
-         "지도 레이어 (토글 가능)", size=11, bold=True, color=C_ACCENT)
-    _bullets(slide, Inches(5.33), Inches(2.40), Inches(4), Inches(2.4), [
-        "OSMnx 보행 도로 + 교차로 + 횡단보도",
-        "NGII 실측 건물 3,775동 (층수별 색)",
+    _bullets(slide, Inches(0.85), Inches(2.95), Inches(4), Inches(1.8), [
+        "보행 도로 + 교차로 + 횡단보도 (OSMnx)",
+        "NGII 건물 3,775동 (층수별 색)",
         "기존 그늘막 18개 (검정/진청 우산)",
-        "수동 가중치 TOP10 (분홍 원)",
-        "학습 가중치 TOP10 (파란 별, BayesOpt)",
-        "그림자 표준편차 (Self-consistency 5회)",
+        "수동 vs 학습 가중치 TOP10 비교",
+        "그림자 표준편차 (Self-consistency)",
     ], size=8)
 
-    # 하단: 사용 안내
-    _box(slide, LEFT, Inches(4.20), CONTENT_WIDTH, Inches(0.85),
+    # 우측: 첨부 2 — 자동 실험 보고서 (NEW)
+    _box(slide, Inches(5.18), Inches(1.85), Inches(4.15), Inches(3.0),
+          fill=C_PANEL, border=C_ACCENT, border_w=1.25)
+    _txt(slide, Inches(5.35), Inches(1.95), Inches(4), Inches(0.3),
+         "📎 첨부 ② 자동 실험 보고서 (NEW)", size=11, bold=True,
+         color=C_ACCENT)
+    _txt(slide, Inches(5.35), Inches(2.30), Inches(4), Inches(0.4),
+         "output/report.html", size=11, bold=True,
+         color=C_TEXT, font=FONT_MONO)
+    _txt(slide, Inches(5.35), Inches(2.65), Inches(4), Inches(0.3),
+         "한 페이지에 모든 산출물 통합:",
+         size=9, color=C_SUB)
+    _bullets(slide, Inches(5.35), Inches(2.95), Inches(4), Inches(1.8), [
+        "요약 카드 4종 (강건/시나리오/배낭/산출물)",
+        "시나리오 비교 표 + 강건 입지 카드",
+        "1차 발표 3대 구역 검증",
+        "BayesOpt 학습 가중치 비교표",
+        "4개 지도 iframe 임베드",
+        "산출물 파일 목록 19종",
+    ], size=8)
+
+    # 하단
+    _box(slide, LEFT, Inches(4.92), CONTENT_WIDTH, Inches(0.5),
           fill=RGBColor(0xF0, 0xF8, 0xFF), border=C_ACCENT, border_w=0.75)
-    _txt(slide, Inches(0.85), Inches(4.30), Inches(8.3), Inches(0.3),
-         "💡 발표 직후 시연 가능 — 브라우저 창에 미리 열어두기 권장",
-         size=10, bold=True, color=C_ACCENT)
-    _txt(slide, Inches(0.85), Inches(4.60), Inches(8.3), Inches(0.4),
-         "사각지대(TOP4·3·5·8) 4곳을 지도에서 직접 확인 → 가장 가까운 기존 그늘막까지 거리 popup",
-         size=9, color=C_TEXT)
+    _txt(slide, Inches(0.85), Inches(5.00), Inches(8.3), Inches(0.3),
+         "💡 자동 생성: PYTHONPATH=. python scripts/build_report.py → output/report.html",
+         size=9, bold=True, color=C_ACCENT)
     _footer(slide, 27)
 
 
