@@ -1,49 +1,51 @@
 {
   "status": "Optimal",
+  "region": "흑석동",
+  "avoid_existing_m": 50.0,
   "budget_manwon": 4000,
   "cost_per_shade_manwon": 800,
   "n_max_by_budget": 5,
   "min_separation_m": 200,
-  "candidate_pool_size": 50,
-  "spatial_separation_pairs": 29,
+  "candidate_pool_size": 7,
+  "spatial_separation_pairs": 1,
   "n_selected": 5,
-  "total_score": 1.852,
+  "total_score": 0.461,
   "total_cost_manwon": 4000,
   "remaining_budget_manwon": 0,
   "selected": [
     {
       "rank": 1,
-      "lat": 37.48976,
-      "lon": 126.96362,
-      "score": 0.466,
+      "lat": 37.49874,
+      "lon": 126.95789,
+      "score": 0.134,
       "cost_manwon": 800
     },
     {
       "rank": 2,
-      "lat": 37.49336,
-      "lon": 126.96246,
-      "score": 0.363,
+      "lat": 37.49786,
+      "lon": 126.96129,
+      "score": 0.107,
       "cost_manwon": 800
     },
     {
       "rank": 3,
-      "lat": 37.49068,
-      "lon": 126.96813,
-      "score": 0.359,
+      "lat": 37.51138,
+      "lon": 126.9612,
+      "score": 0.094,
       "cost_manwon": 800
     },
     {
       "rank": 4,
-      "lat": 37.48617,
-      "lon": 126.96703,
-      "score": 0.333,
+      "lat": 37.50146,
+      "lon": 126.96014,
+      "score": 0.069,
       "cost_manwon": 800
     },
     {
       "rank": 5,
-      "lat": 37.5131,
-      "lon": 126.94421,
-      "score": 0.331,
+      "lat": 37.50328,
+      "lon": 126.96465,
+      "score": 0.057,
       "cost_manwon": 800
     }
   ]

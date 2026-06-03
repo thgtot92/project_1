@@ -44,6 +44,10 @@ def optimize_budget_knapsack(
     max_install: int | None = None,
     pool_size: int = DEFAULT_CANDIDATE_POOL,
     cost_per_shade: int = COST_PER_SHADE,
+    # NEW: 흑석동 한정 + 기존 그늘막 회피
+    region_boundary: gpd.GeoDataFrame | None = None,
+    existing_shades: gpd.GeoDataFrame | None = None,
+    avoid_existing_m: float = 50.0,
 ) -> dict:
     """예산·공간분산 제약 하에서 총 score 최대화하는 그늘막 위치 선정.
 
@@ -60,8 +64,30 @@ def optimize_budget_knapsack(
     """
     import pulp
 
+    # === 신규: 흑석동 경계 안 격자만 통과 (region_boundary 지정 시) ===
+    filtered = candidates.copy()
+    if region_boundary is not None and not region_boundary.empty:
+        boundary_wgs = region_boundary.to_crs("EPSG:4326")
+        bgeom = boundary_wgs.geometry.iloc[0]
+        candidates_wgs = filtered.to_crs("EPSG:4326")
+        mask = candidates_wgs.geometry.centroid.within(bgeom)
+        filtered = filtered.loc[mask.values]
+        print(f"  [OPT] 영역 필터: {len(candidates)} → {len(filtered)} 격자")
+
+    # === 신규: 기존 그늘막 N m 이내 격자 제외 (신규 위치만) ===
+    if (existing_shades is not None and not existing_shades.empty
+            and avoid_existing_m > 0):
+        shades_m = existing_shades.to_crs(CRS_KOREA)
+        filtered_m = filtered.to_crs(CRS_KOREA)
+        union_buffer = shades_m.buffer(avoid_existing_m).unary_union
+        keep_mask = ~filtered_m.geometry.centroid.within(union_buffer)
+        before = len(filtered)
+        filtered = filtered.loc[keep_mask.values]
+        print(f"  [OPT] 기존 그늘막 {avoid_existing_m:.0f}m 회피: "
+              f"{before} → {len(filtered)}")
+
     # 후보 풀: score 상위 N개만 (전체 격자에 대해 ILP 돌리면 너무 큼)
-    pool = candidates.nlargest(pool_size, 'score').reset_index(drop=True)
+    pool = filtered.nlargest(pool_size, 'score').reset_index(drop=True)
     n = len(pool)
     if n == 0:
         return {"selected": [], "total_score": 0.0, "total_cost": 0,
@@ -113,6 +139,9 @@ def optimize_budget_knapsack(
 
     result = {
         "status": status_name,
+        "region": ("흑석동" if region_boundary is not None
+                    and not region_boundary.empty else "동작구 전체"),
+        "avoid_existing_m": float(avoid_existing_m) if existing_shades is not None else 0.0,
         "budget_manwon": budget_manwon,
         "cost_per_shade_manwon": cost_per_shade,
         "n_max_by_budget": int(n_max_by_budget),
@@ -228,11 +257,39 @@ def render_budget_map(result: dict, candidates: gpd.GeoDataFrame,
 
 
 def run(candidates: gpd.GeoDataFrame,
-        budget_manwon: int = 4000) -> dict:
-    """엔트리포인트: 후보 GeoDataFrame + 예산 → 최적화 + 저장."""
+        budget_manwon: int = 4000,
+        region: str | None = "heukseok",
+        avoid_existing_m: float = 50.0) -> dict:
+    """엔트리포인트: 후보 GeoDataFrame + 예산 → 최적화 + 저장.
+
+    region: "heukseok" 이면 흑석동 경계 안 + 실측 그늘막 회피.
+    """
+    from . import data_loader
+    region_gdf = None
+    existing_shades_gdf = None
+    if region == "heukseok":
+        boundary_path = (Path(__file__).resolve().parent.parent
+                           / "data" / "raw" / "heukseok" / "ngii_data"
+                           / "흑석동_경계5186.shp")
+        if boundary_path.exists():
+            region_gdf = gpd.read_file(boundary_path).to_crs("EPSG:4326")
+            existing_shades_gdf = data_loader.load_existing_shades()
+            print(f"[OPT] 흑석동 한정 모드: 경계 안 + 기존 그늘막 "
+                  f"{int(avoid_existing_m)}m 회피 (실측 "
+                  f"{len(existing_shades_gdf)}개)")
+        else:
+            print("[OPT] 흑석동 경계 데이터 없음 → 동작구 전체 모드")
+
     print(f"[OPT] 예산 제약 최적화: {budget_manwon:,}만원")
-    result = optimize_budget_knapsack(candidates, budget_manwon=budget_manwon)
-    print(f"  [OPT] status={result['status']}, 선정 {result['n_selected']}개, "
+    result = optimize_budget_knapsack(
+        candidates, budget_manwon=budget_manwon,
+        region_boundary=region_gdf,
+        existing_shades=existing_shades_gdf,
+        avoid_existing_m=avoid_existing_m,
+    )
+    print(f"  [OPT] status={result['status']}, "
+          f"region={result.get('region', '?')}, "
+          f"선정 {result['n_selected']}개, "
           f"총 score {result['total_score']:.3f}, "
           f"비용 {result['total_cost_manwon']:,}만원")
 
@@ -242,8 +299,16 @@ def run(candidates: gpd.GeoDataFrame,
                           encoding="utf-8")
     print(f"  [OPT] {json_path}")
 
+    # 시각화 후보: 영역 필터 적용 후 결과로 그리기 위해 동일 후보 전달
+    map_candidates = candidates
+    if region_gdf is not None and not region_gdf.empty:
+        bgeom = region_gdf.geometry.iloc[0]
+        cand_wgs = candidates.to_crs("EPSG:4326")
+        map_candidates = candidates.loc[
+            cand_wgs.geometry.centroid.within(bgeom).values
+        ]
     map_path = OUTPUT / "budget_optimal.html"
-    render_budget_map(result, candidates, map_path)
+    render_budget_map(result, map_candidates, map_path)
     print(f"  [OPT] {map_path}")
 
     return result

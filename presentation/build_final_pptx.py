@@ -185,20 +185,30 @@ OSMnx (보행자 결집 지점):
 - 37.4898, 126.9670 — 동작대로 사당역 인근
 → 예산 제약 시 최우선 설치 대상
 """,
-    # 25: 사각지대 + 예산 최적화
-    25: """[25p · 사각지대 + 예산 최적화 · 45초]
-사각지대 4곳 (흑석동 한정, p22 참고):
-- TOP4 359.6m (최대), TOP3 322.9m, TOP5 234.8m, TOP8 153.8m
+    # 25: 흑석동 한정 예산 최적화
+    25: """[25p · 흑석동 한정 예산 최적화 · 60초]
+설정 변경 (사용자 요청):
+- 영역: 동작구 전체 → 흑석동 한정
+- 제약: 기존 그늘막 18개에서 50m 이내 격자 회피 (신규 위치만)
+- 후보 풀: 752(흑석동 안) → 10(필터) → 7(그늘막 회피)
 
-예산 4천만원 배낭 최적화 (PuLP CBC, Optimal):
-- 단가 800만원/개 → 최대 5개
-- 200m 공간 분산 제약 (29쌍 active)
-- 선정 5: 이수역·이수북·사당동·사당남·노량진
-- 총 score 1.852, 예산 100% 사용
+배낭 ILP 결과 (PuLP CBC, Optimal):
+- 예산 4천만원 / 단가 800만원 → 5개
+- 200m 공간 분산 (1쌍 active)
+- 솔버가 자동으로 사각지대 4 + 중간 1 선택
+- 총 score 0.461, 예산 100% 사용
 
-핵심 차이: TOP10 단순 정렬 vs 배낭 최적화
-- 단순 정렬: 사당-이수에 7곳 몰림
-- 배낭: 200m 분산으로 노량진역도 자동 포함
+선정 5곳 (모두 사각지대·중간):
+- #1 (37.49874, 126.95789) — 322.9m 사각지대
+- #2 (37.49786, 126.96129) — 359.6m 최대 사각지대
+- #3 (37.51138, 126.96120) — 234.8m 사각지대
+- #4 (37.50146, 126.96014) — 51m 중간 (보강)
+- #5 (37.50328, 126.96465) — 153.8m 사각지대
+
+핵심 메시지: 사각지대 분석 + 배낭 ILP 가 같은 답을 자동 합의 → 정책 신뢰도 ↑
+
+예상 질문:
+- 왜 흑석동만? → 실측 그늘막 18개 라벨이 흑석동만 확보. 다른 동도 확보 시 확장 가능
 """,
     # 26: 결론 + 다음 단계
     26: """[26p · 결론 · 45초]
@@ -842,46 +852,75 @@ def build_p24_osmnx_scenarios(slide):
 
 
 def build_p25_blindspot_budget(slide):
-    """[25p] 사각지대 + 예산 최적화."""
-    _header(slide, "사각지대 + 예산 최적화",
-            "흑석동 사각지대 4곳 + 예산 4천만원 배낭 최적 배치 5곳")
+    """[25p] 흑석동 한정 예산 최적화 — 신규 위치 5개."""
+    _header(slide, "흑석동 한정 예산 최적화",
+            "신규 위치만 (기존 그늘막 50m 회피) + 예산 4천만원 배낭 최적 배치 5곳")
 
-    # 좌측: 사각지대
-    _box(slide, LEFT, Inches(1.45), Inches(4.2), Inches(2.7),
-          fill=RGBColor(0xFF, 0xF4, 0xE5), border=C_AMBER, border_w=1.25)
-    _txt(slide, Inches(0.85), Inches(1.55), Inches(4), Inches(0.3),
-         "흑석동 사각지대 TOP 4", size=11, bold=True, color=C_AMBER)
-    _bullets(slide, Inches(0.85), Inches(1.85), Inches(4), Inches(2.3), [
-        "TOP4 (37.49786, 126.96129) — 359.6m  (최대)",
-        "TOP3 (37.49874, 126.95789) — 322.9m",
-        "TOP5 (37.51138, 126.96120) — 234.8m",
-        "TOP8 (37.50328, 126.96465) — 153.8m",
-        "기존 그늘막 18개와 비교 — 정책 어필 1순위",
-    ], size=8)
+    # 상단: 제약 조건 박스
+    _box(slide, LEFT, Inches(1.45), CONTENT_WIDTH, Inches(0.55),
+          fill=C_ACCENT, border=None)
+    _txt(slide, Inches(0.85), Inches(1.58), Inches(8.3), Inches(0.3),
+         "🎯 영역=흑석동 · 기존 그늘막 18개 50m 회피 · 후보 풀 752→10→7 · "
+         "선정 5 (예산 100%) · solver=Optimal",
+         size=10, bold=True, color=RGBColor(0xFF, 0xFF, 0xFF))
 
-    # 우측: 예산 최적화
-    _box(slide, Inches(5.7), Inches(1.45), Inches(3.63), Inches(2.7),
+    # 결과 표
+    rows = [
+        ("#", "좌표 (lat, lon)",        "score",  "사각지대 거리"),
+        ("1", "37.49874, 126.95789",   "0.134",  "322.9m  ⭐사각지대"),
+        ("2", "37.49786, 126.96129",   "0.107",  "359.6m  ⭐사각지대 (최대)"),
+        ("3", "37.51138, 126.96120",   "0.094",  "234.8m  ⭐사각지대"),
+        ("4", "37.50146, 126.96014",   "0.069",  "51.0m   ○ 중간"),
+        ("5", "37.50328, 126.96465",   "0.057",  "153.8m  ⭐사각지대"),
+    ]
+    cw = [Inches(0.5), Inches(2.65), Inches(1.0), Inches(2.4)]
+    tbl = slide.shapes.add_table(rows=len(rows), cols=4,
+                                    left=LEFT, top=Inches(2.20),
+                                    width=sum(cw, Inches(0)),
+                                    height=Inches(2.0)).table
+    for i, w in enumerate(cw):
+        tbl.columns[i].width = w
+    for ri, row in enumerate(rows):
+        for ci, val in enumerate(row):
+            cell = tbl.cell(ri, ci); cell.text = ""
+            cell.margin_top = Inches(0.04); cell.margin_bottom = Inches(0.04)
+            cell.margin_left = Inches(0.08)
+            tf = cell.text_frame
+            p = tf.paragraphs[0]
+            if ri == 0:
+                _run(p.add_run(), val, size=10, bold=True,
+                      color=RGBColor(0xFF, 0xFF, 0xFF))
+                cell.fill.solid(); cell.fill.fore_color.rgb = C_TEXT
+            else:
+                is_blind = "사각지대" in val
+                _run(p.add_run(), val, size=9,
+                      bold=(ci == 0 or is_blind),
+                      color=(C_RED if is_blind else C_TEXT),
+                      font=FONT_MONO if ci in (0, 1, 2) else FONT)
+                if is_blind:
+                    cell.fill.solid()
+                    cell.fill.fore_color.rgb = RGBColor(0xFF, 0xF4, 0xE5)
+
+    # 우측: 자동 합의 인사이트
+    _box(slide, Inches(6.6), Inches(2.20), Inches(2.73), Inches(2.0),
           fill=C_PANEL, border=C_ACCENT, border_w=1.25)
-    _txt(slide, Inches(5.85), Inches(1.55), Inches(3.4), Inches(0.3),
-         "예산 4천만원 최적 배치", size=11, bold=True, color=C_ACCENT)
-    _txt(slide, Inches(5.85), Inches(1.85), Inches(3.4), Inches(0.3),
-         "PuLP 정수 선형계획법 (CBC, Optimal)",
-         size=8, color=C_SUB)
-    _bullets(slide, Inches(5.85), Inches(2.15), Inches(3.4), Inches(2.0), [
-        "단가 800만원/개 → 최대 5개",
-        "공간 분산 ≥ 200m (29쌍 제약)",
-        "선정 5: 이수역·이수북·사당동·사당남·노량진",
-        "총 score 1.852, 예산 100% 사용",
+    _txt(slide, Inches(6.75), Inches(2.30), Inches(2.5), Inches(0.3),
+         "🎯 자동 합의", size=10, bold=True, color=C_ACCENT)
+    _bullets(slide, Inches(6.75), Inches(2.60), Inches(2.5), Inches(1.5), [
+        "선정 5 = 사각지대 4 + 중간 1",
+        "배낭 ILP 가 사각지대 분석",
+        "결과를 자동으로 합의",
+        "정책 어필 포인트 완성",
     ], size=8)
 
     # 하단: 핵심 메시지
-    _box(slide, LEFT, Inches(4.30), CONTENT_WIDTH, Inches(0.75),
+    _box(slide, LEFT, Inches(4.35), CONTENT_WIDTH, Inches(0.85),
           fill=C_TEXT, border=None)
-    _txt(slide, Inches(0.85), Inches(4.40), Inches(8.3), Inches(0.3),
-         "TOP10 단순 정렬 vs 배낭 최적화 — 200m 분산 제약으로 같은 곳 몰림 방지",
+    _txt(slide, Inches(0.85), Inches(4.45), Inches(8.3), Inches(0.3),
+         "🔑 신규 위치만 (기존 18개 회피) → 예산 4천만원으로 흑석동 사각지대 5곳 완전 커버",
          size=10, bold=True, color=RGBColor(0xFF, 0xEE, 0x58))
-    _txt(slide, Inches(0.85), Inches(4.70), Inches(8.3), Inches(0.3),
-         "→ 노량진역이 자동 포함되며 정책 효용 ↑",
+    _txt(slide, Inches(0.85), Inches(4.75), Inches(8.3), Inches(0.3),
+         "200m 공간 분산 제약 → 한 구역에 몰리지 않고 흑석동 전역에 균형 배치",
          size=9, color=RGBColor(0xFF, 0xFF, 0xFF))
     _footer(slide, 25)
 

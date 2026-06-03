@@ -131,15 +131,19 @@ def build():
     # 예산 결과
     budget_html = ""
     if budget.get("selected"):
+        region_label = budget.get("region", "동작구 전체")
+        avoid_m = budget.get("avoid_existing_m", 0)
         budget_html = (
-            f"<p><b>예산 {budget.get('budget_manwon', 0):,}만원</b> · 단가 "
+            f"<p><span class='pass'>🎯 영역: {region_label}</span> · "
+            f"기존 그늘막 <b>{avoid_m:.0f}m</b> 회피 (신규 위치만) · "
+            f"예산 <b>{budget.get('budget_manwon', 0):,}만원</b> · 단가 "
             f"{budget.get('cost_per_shade_manwon', 0):,}만원/개 → "
             f"최대 {budget.get('n_max_by_budget', 0)}개</p>"
             f"<p>solver status: <b>{budget.get('status', '?')}</b> · "
+            f"후보 풀 <b>{budget.get('candidate_pool_size', 0)}</b>개 · "
             f"선정 <b>{budget.get('n_selected', 0)}개</b> · "
             f"총 score <b>{budget.get('total_score', 0)}</b> · "
-            f"공간 분산 {budget.get('min_separation_m', 0):.0f}m "
-            f"({budget.get('spatial_separation_pairs', 0)}쌍 제약)</p>"
+            f"공간 분산 {budget.get('min_separation_m', 0):.0f}m</p>"
             f"<table><thead><tr><th>#</th><th>좌표</th><th>score</th></tr></thead><tbody>"
         )
         for sel in budget["selected"]:
