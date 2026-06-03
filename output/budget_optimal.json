@@ -6,46 +6,39 @@
   "cost_per_shade_manwon": 800,
   "n_max_by_budget": 5,
   "min_separation_m": 200,
-  "candidate_pool_size": 7,
-  "spatial_separation_pairs": 1,
-  "n_selected": 5,
-  "total_score": 0.461,
-  "total_cost_manwon": 4000,
-  "remaining_budget_manwon": 0,
+  "candidate_pool_size": 4,
+  "spatial_separation_pairs": 0,
+  "n_selected": 4,
+  "total_score": 0.144,
+  "total_cost_manwon": 3200,
+  "remaining_budget_manwon": 800,
   "selected": [
     {
       "rank": 1,
-      "lat": 37.49874,
-      "lon": 126.95789,
-      "score": 0.134,
+      "lat": 37.51138,
+      "lon": 126.9612,
+      "score": 0.067,
       "cost_manwon": 800
     },
     {
       "rank": 2,
-      "lat": 37.49786,
-      "lon": 126.96129,
-      "score": 0.107,
+      "lat": 37.50328,
+      "lon": 126.96465,
+      "score": 0.044,
       "cost_manwon": 800
     },
     {
       "rank": 3,
-      "lat": 37.51138,
-      "lon": 126.9612,
-      "score": 0.094,
+      "lat": 37.50146,
+      "lon": 126.96014,
+      "score": 0.031,
       "cost_manwon": 800
     },
     {
       "rank": 4,
-      "lat": 37.50146,
-      "lon": 126.96014,
-      "score": 0.069,
-      "cost_manwon": 800
-    },
-    {
-      "rank": 5,
-      "lat": 37.50328,
-      "lon": 126.96465,
-      "score": 0.057,
+      "lat": 37.50509,
+      "lon": 126.96577,
+      "score": 0.001,
       "cost_manwon": 800
     }
   ]

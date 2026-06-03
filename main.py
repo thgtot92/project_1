@@ -114,18 +114,21 @@ def run():
         avg_sv = float(top["sv_deficit"].mean())
         print(f"\n  [CV] TOP10 평균 streetview_deficit: {avg_sv:.3f}")
 
-    print("\n[STEP 5/5] 예산 제약 최적화 (흑석동 한정 · 신규 위치)")
+    print("\n[STEP 5/5] 예산 제약 최적화 (흑석동 한정 · 보도 위 신규 위치)")
     try:
         from src.optimization import run as run_optimization
         from src.filtering import (_filter_by_pedestrian, _filter_by_buildings,
+                                     _filter_by_green_area,
                                      _filter_by_focus_proximity)
         from src.config import FILTER, CRS_WGS84
-        # 흑석동 한정 후보 풀 (보행로 10m + 결집지 100m 완화)
+        # 흑석동 한정 후보 풀: 도시 보도 10m + 건물 컷 + 녹지 컷 + 결집지 80m
+        # (녹지 컷으로 산책로·산림 추천 차단, 결집지 강제 근접)
         g = scored.to_crs(CRS_WGS84).sort_values("score", ascending=False)
         g = _filter_by_pedestrian(g, buffer_m=10.0,
                                     min_width=FILTER["min_sidewalk_width_m"])
         g = _filter_by_buildings(g, inset_m=5.0)
-        g = _filter_by_focus_proximity(g, max_dist_m=100.0)
+        g = _filter_by_green_area(g)
+        g = _filter_by_focus_proximity(g, max_dist_m=80.0)
         cand_for_opt = g.reset_index(drop=True)
         run_optimization(cand_for_opt, budget_manwon=4000,
                           region="heukseok", avoid_existing_m=50.0)

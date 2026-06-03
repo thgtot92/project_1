@@ -56,6 +56,26 @@ def _filter_by_buildings(candidates: gpd.GeoDataFrame,
     return candidates.loc[mask.values]
 
 
+def _filter_by_green_area(candidates: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """OSMnx 녹지·공원·산림(현충원 등) 안에 있는 격자 centroid 제외.
+
+    그늘막은 일상 보행 동선에 설치하는 것이므로 산책로·녹지는 정책 대상 X.
+    """
+    try:
+        from . import osm_intersections
+        green = osm_intersections.fetch_osm_green_areas()
+    except Exception as e:
+        print(f"    [warn] 녹지 fetch 실패 → 통과: {e}")
+        return candidates
+    if green is None or green.empty:
+        return candidates
+    green_m = green.to_crs(CRS_KOREA)
+    green_union = green_m.geometry.unary_union
+    cand_m = candidates.to_crs(CRS_KOREA)
+    mask = ~cand_m.geometry.centroid.within(green_union)
+    return candidates.loc[mask.values]
+
+
 def _filter_by_focus_proximity(candidates: gpd.GeoDataFrame,
                                   max_dist_m: float = 50.0) -> gpd.GeoDataFrame:
     """격자 centroid 가 OSMnx 교차로 OR 횡단보도에서 max_dist_m 이내인 것만 통과.
@@ -98,6 +118,11 @@ def filter_candidates(scored_grid: gpd.GeoDataFrame,
     g = _filter_by_buildings(g, inset_m=5.0)
     if verbose:
         print(f"    건물 안 centroid 컷: {before} → {len(g)}")
+
+    before = len(g)
+    g = _filter_by_green_area(g)
+    if verbose:
+        print(f"    녹지·공원·산림 컷: {before} → {len(g)}")
 
     before = len(g)
     g = _filter_by_focus_proximity(g, max_dist_m=50.0)

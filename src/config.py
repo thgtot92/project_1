@@ -39,13 +39,13 @@ GRID_SIZE_M = 100
 # - streetview_deficit: 거리뷰 segmentation 으로 산출 (CV-B)
 # - intersection_density: OSMnx 교차로 밀도 (보행자 결집 지점)
 WEIGHTS = {
-    "popdens":              0.18,   # 유동인구
-    "lst":                  0.18,   # 지표면 온도
-    "vuln":                 0.18,   # 취약계층
+    "popdens":              0.12,   # 유동인구
+    "lst":                  0.12,   # 지표면 온도
+    "vuln":                 0.12,   # 취약계층
     "shade":               -0.15,   # 기존 그늘막 (페널티)
     "natural":             -0.05,   # 자연 그늘 (CV-A + DSM)
-    "streetview_deficit":   0.12,   # 거리뷰 그늘 결핍 (CV-B)
-    "intersection_density": 0.20,   # 교차로+횡단보도 밀도 (OSMnx) — 보행자 결집 강조
+    "streetview_deficit":   0.10,   # 거리뷰 그늘 결핍 (CV-B)
+    "intersection_density": 0.40,   # 교차로+횡단보도 밀도 — 최강조 (보도 위 추천)
 }
 
 # 시나리오 프리셋 (정책 관점별 가중치)

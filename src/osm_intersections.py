@@ -20,13 +20,14 @@ from shapely.geometry import box
 from .config import (DATA_PROCESSED, DONGJAK_BBOX, CRS_WGS84, CRS_KOREA)
 
 
-# 보행자 그늘막 관점에서 의미 있는 highway 태그
-# (motorway·trunk는 차도 위주라 제외 가능하지만 인근 보도 존재 → 포함)
+# 도시 보도·차도 옆 — 산책로·계단(path, steps) 제외해 녹지 산책로 컷
+# 그늘막 정책 대상은 일상 보행 동선 (도시 도로 + 횡단보도 옆 보도)
 WALKABLE_HIGHWAYS = [
     "primary", "secondary", "tertiary", "unclassified",
     "residential", "living_street",
-    "footway", "pedestrian", "path", "steps",
+    "footway", "pedestrian",          # 도시 보도·보행자 전용
     "primary_link", "secondary_link", "tertiary_link",
+    # 제외: path, steps (공원 산책로·등산로·계단 → 녹지 추천 방지)
 ]
 
 
@@ -175,6 +176,72 @@ def fetch_osm_crossings(force: bool = False) -> gpd.GeoDataFrame:
     DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
     out.to_file(out_path, driver="GeoJSON")
     print(f"  [OSMnx] {len(out)} 횡단보도(중복 제거 후) → {out_path}")
+    return out
+
+
+def fetch_osm_green_areas(force: bool = False) -> gpd.GeoDataFrame:
+    """OSMnx 녹지·공원·산림 polygon (그늘막 추천에서 제외할 영역).
+
+    태그: leisure=park, landuse=forest/grass/recreation_ground,
+          natural=wood, boundary=protected_area (현충원 등)
+    캐시: data/processed/osm_green_areas.geojson
+    """
+    out_path = DATA_PROCESSED / "osm_green_areas.geojson"
+    if out_path.exists() and not force:
+        return gpd.read_file(out_path).to_crs(CRS_WGS84)
+
+    import osmnx as ox
+    bbox = DONGJAK_BBOX
+    bbox_tuple = (bbox["min_lon"], bbox["min_lat"],
+                   bbox["max_lon"], bbox["max_lat"])
+    print(f"  [OSMnx] 동작구 BBOX 녹지·공원·산림 다운로드 중...")
+
+    tag_sets = [
+        {"leisure": ["park", "garden", "nature_reserve"]},
+        {"landuse": ["forest", "grass", "recreation_ground",
+                       "cemetery", "meadow"]},
+        {"natural": ["wood", "scrub", "grassland"]},
+        {"boundary": "protected_area"},   # 현충원 같은 보호구역
+    ]
+    all_gdfs = []
+    for tags in tag_sets:
+        try:
+            try:
+                g = ox.features_from_bbox(bbox=bbox_tuple, tags=tags)
+            except TypeError:
+                g = ox.features_from_bbox(
+                    north=bbox["max_lat"], south=bbox["min_lat"],
+                    east=bbox["max_lon"], west=bbox["min_lon"], tags=tags
+                )
+            if g is not None and not g.empty:
+                all_gdfs.append(g.to_crs(CRS_WGS84))
+                print(f"    {tags}: {len(g)}개")
+        except Exception as e:
+            print(f"    {tags}: 실패 ({type(e).__name__})")
+
+    if not all_gdfs:
+        empty = gpd.GeoDataFrame(geometry=[], crs=CRS_WGS84)
+        DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
+        empty.to_file(out_path, driver="GeoJSON")
+        return empty
+
+    merged = gpd.GeoDataFrame(
+        pd.concat(all_gdfs, ignore_index=True), crs=CRS_WGS84,
+    )
+    # Polygon/MultiPolygon 만 유지
+    merged = merged[merged.geometry.geom_type.isin(
+        ["Polygon", "MultiPolygon"]
+    )]
+    keep = ["geometry"]
+    for c in ("leisure", "landuse", "natural", "boundary", "name"):
+        if c in merged.columns:
+            merged[c] = merged[c].astype(str)
+            keep.append(c)
+    out = merged[keep].reset_index(drop=True)
+
+    DATA_PROCESSED.mkdir(parents=True, exist_ok=True)
+    out.to_file(out_path, driver="GeoJSON")
+    print(f"  [OSMnx] {len(out)} 녹지 영역 → {out_path}")
     return out
 
 
